@@ -8,7 +8,7 @@ import LocationSection from "@/components/wedding/LocationSection";
 import VenueInfo from "@/components/wedding/VenueInfo";
 import AccountSection from "@/components/wedding/AccountSection";
 
-import GuestbookSection from "@/components/wedding/GuestbookSection";
+import SnapSection from "@/components/wedding/SnapSection";
 import WeddingFooter from "@/components/wedding/WeddingFooter";
 import SectionDivider from "@/components/wedding/SectionDivider";
 
@@ -34,7 +34,7 @@ const Index = () => {
         <SectionDivider />
         <AccountSection />
         <SectionDivider />
-        <GuestbookSection />
+        <SnapSection />
         <SectionDivider />
         <WeddingFooter />
       </div>
