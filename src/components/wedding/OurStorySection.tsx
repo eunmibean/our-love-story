@@ -25,7 +25,7 @@ const frameStyles = [
 ];
 
 const OurStorySection = () => {
-  const { ref, isInView } = useInView();
+  const { ref, isVisible: isInView } = useInView();
 
   return (
     <section ref={ref} className={`px-6 py-12 transition-all duration-700 ${isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>

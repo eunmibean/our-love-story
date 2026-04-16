@@ -22,6 +22,8 @@ const Index = () => {
         <SectionDivider />
         <ContactSection />
         <SectionDivider />
+        <OurStorySection />
+        <SectionDivider />
         <GallerySection />
         <SectionDivider />
         <DateCountdown />
