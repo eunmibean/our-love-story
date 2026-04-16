@@ -1,6 +1,7 @@
 import HeroSection from "@/components/wedding/HeroSection";
 import InvitationCard from "@/components/wedding/InvitationCard";
 import ContactSection from "@/components/wedding/ContactSection";
+import OurStorySection from "@/components/wedding/OurStorySection";
 import GallerySection from "@/components/wedding/GallerySection";
 import DateCountdown from "@/components/wedding/DateCountdown";
 import LocationSection from "@/components/wedding/LocationSection";
@@ -20,6 +21,8 @@ const Index = () => {
         <InvitationCard />
         <SectionDivider />
         <ContactSection />
+        <SectionDivider />
+        <OurStorySection />
         <SectionDivider />
         <GallerySection />
         <SectionDivider />
