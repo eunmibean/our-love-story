@@ -34,8 +34,6 @@ const Index = () => {
         <SectionDivider />
         <AccountSection />
         <SectionDivider />
-        <RSVPSection />
-        <SectionDivider />
         <GuestbookSection />
         <SectionDivider />
         <WeddingFooter />
