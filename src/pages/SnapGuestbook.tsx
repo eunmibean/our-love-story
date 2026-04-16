@@ -12,11 +12,10 @@ interface HeartItem {
 const MAX_HEARTS = 30;
 
 const SnapGuestbook = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
-  const renderRef = useRef<Matter.Render | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hearts, setHearts] = useState<HeartItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
@@ -25,107 +24,289 @@ const SnapGuestbook = () => {
   const navigate = useNavigate();
   const heartBodiesRef = useRef<Map<number, { body: Matter.Body; item: HeartItem }>>(new Map());
   const nextIdRef = useRef(1);
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Get dimensions based on container
-  const getTriangleDimensions = useCallback(() => {
+  const getLayout = useCallback(() => {
     const w = Math.min(window.innerWidth, 480);
-    const padding = 30;
+    const padding = 20;
+    // Main big triangle
     const triW = w - padding * 2;
-    const triH = triW * 1.1;
-    const topY = 60;
+    const triH = triW * 1.2;
+    const topY = 40;
     const apex = { x: w / 2, y: topY };
-    const bottomLeft = { x: padding, y: topY + triH };
-    const bottomRight = { x: w - padding, y: topY + triH };
-    return { w, triW, triH, topY, apex, bottomLeft, bottomRight, canvasH: topY + triH + 80 };
+    const bl = { x: padding, y: topY + triH };
+    const br = { x: w - padding, y: topY + triH };
+    return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 20 };
   }, []);
 
+  // Setup Matter.js engine + walls
   useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return;
-
-    const { w, canvasH, apex, bottomLeft, bottomRight } = getTriangleDimensions();
-    const wallThickness = 20;
+    const { w, canvasH, apex, bl, br } = getLayout();
 
     const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.8 } });
     engineRef.current = engine;
 
-    const render = Matter.Render.create({
-      canvas: canvasRef.current,
-      engine,
-      options: {
-        width: w,
-        height: canvasH,
-        wireframes: false,
-        background: "transparent",
-        pixelRatio: window.devicePixelRatio || 2,
-      },
-    });
-    renderRef.current = render;
+    // Triangle walls (static)
+    const wallThick = 18;
+    const makeWall = (p1: {x:number;y:number}, p2: {x:number;y:number}) => {
+      const cx = (p1.x + p2.x) / 2;
+      const cy = (p1.y + p2.y) / 2;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const angle = Math.atan2(dy, dx);
+      return Matter.Bodies.rectangle(cx, cy, len + wallThick, wallThick, {
+        isStatic: true, angle, render: { visible: false },
+      });
+    };
 
-    // Create triangle walls
-    const leftWall = createWall(apex, bottomLeft, wallThickness);
-    const rightWall = createWall(apex, bottomRight, wallThickness);
-    const bottomWall = Matter.Bodies.rectangle(
-      (bottomLeft.x + bottomRight.x) / 2,
-      bottomLeft.y,
-      bottomRight.x - bottomLeft.x + wallThickness,
-      wallThickness,
-      { isStatic: true, render: { fillStyle: "transparent" } }
+    const leftWall = makeWall(apex, bl);
+    const rightWall = makeWall(apex, br);
+    const bottom = Matter.Bodies.rectangle(
+      (bl.x + br.x) / 2, bl.y, br.x - bl.x + wallThick, wallThick,
+      { isStatic: true, render: { visible: false } }
     );
-
-    Matter.Composite.add(engine.world, [leftWall, rightWall, bottomWall]);
+    Matter.Composite.add(engine.world, [leftWall, rightWall, bottom]);
 
     const runner = Matter.Runner.create();
     runnerRef.current = runner;
-    Matter.Render.run(render);
     Matter.Runner.run(runner, engine);
 
     return () => {
-      Matter.Render.stop(render);
       Matter.Runner.stop(runner);
       Matter.Engine.clear(engine);
-      render.canvas.remove();
     };
-  }, [getTriangleDimensions]);
+  }, [getLayout]);
 
-  const createWall = (
-    p1: { x: number; y: number },
-    p2: { x: number; y: number },
-    thickness: number
-  ) => {
-    const cx = (p1.x + p2.x) / 2;
-    const cy = (p1.y + p2.y) / 2;
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    const angle = Math.atan2(dy, dx);
+  // Custom render loop
+  useEffect(() => {
+    let animFrame: number;
+    const draw = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) { animFrame = requestAnimationFrame(draw); return; }
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { animFrame = requestAnimationFrame(draw); return; }
 
-    return Matter.Bodies.rectangle(cx, cy, length + thickness, thickness, {
-      isStatic: true,
-      angle,
-      render: { fillStyle: "transparent" },
-    });
+      const dpr = window.devicePixelRatio || 2;
+      const { w, canvasH, apex, bl, br } = getLayout();
+      canvas.width = w * dpr;
+      canvas.height = canvasH * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${canvasH}px`;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, canvasH);
+
+      // === Draw mountain scene inside triangle (clipped) ===
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(apex.x, apex.y + 6);
+      ctx.lineTo(bl.x + 4, bl.y - 4);
+      ctx.lineTo(br.x - 4, br.y - 4);
+      ctx.closePath();
+      ctx.clip();
+
+      // Dark background inside
+      ctx.fillStyle = "#2a2d22";
+      ctx.fillRect(0, 0, w, canvasH);
+
+      // Mountain layers (back to front)
+      // Far mountains - dark grey
+      ctx.fillStyle = "#4a4d40";
+      ctx.beginPath();
+      ctx.moveTo(bl.x, bl.y - 120);
+      ctx.lineTo(bl.x + 60, bl.y - 200);
+      ctx.lineTo(bl.x + 100, bl.y - 170);
+      ctx.lineTo(w / 2 - 40, bl.y - 250);
+      ctx.lineTo(w / 2, bl.y - 220);
+      ctx.lineTo(w / 2 + 50, bl.y - 260);
+      ctx.lineTo(br.x - 80, bl.y - 180);
+      ctx.lineTo(br.x - 30, bl.y - 210);
+      ctx.lineTo(br.x, bl.y - 130);
+      ctx.lineTo(br.x, bl.y);
+      ctx.lineTo(bl.x, bl.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Mid mountains - slightly lighter
+      ctx.fillStyle = "#3d4032";
+      ctx.beginPath();
+      ctx.moveTo(bl.x, bl.y - 80);
+      ctx.lineTo(bl.x + 80, bl.y - 160);
+      ctx.lineTo(bl.x + 130, bl.y - 120);
+      ctx.lineTo(w / 2, bl.y - 180);
+      ctx.lineTo(w / 2 + 60, bl.y - 140);
+      ctx.lineTo(br.x - 50, bl.y - 170);
+      ctx.lineTo(br.x, bl.y - 90);
+      ctx.lineTo(br.x, bl.y);
+      ctx.lineTo(bl.x, bl.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Snow caps
+      ctx.fillStyle = "#e8e8e0";
+      // Snow on far left peak
+      const snowPeaks = [
+        { px: bl.x + 60, py: bl.y - 200, sw: 18 },
+        { px: w / 2 - 40, py: bl.y - 250, sw: 22 },
+        { px: w / 2 + 50, py: bl.y - 260, sw: 20 },
+        { px: br.x - 30, py: bl.y - 210, sw: 16 },
+      ];
+      snowPeaks.forEach(({ px, py, sw }) => {
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px - sw, py + sw * 0.8);
+        ctx.lineTo(px + sw, py + sw * 0.8);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Forest/trees at bottom
+      ctx.fillStyle = "#1e2118";
+      const treeBaseY = bl.y;
+      for (let tx = bl.x; tx < br.x; tx += 12) {
+        const treeH = 30 + Math.random() * 25;
+        ctx.beginPath();
+        ctx.moveTo(tx, treeBaseY);
+        ctx.lineTo(tx - 6, treeBaseY);
+        ctx.lineTo(tx - 1, treeBaseY - treeH);
+        ctx.lineTo(tx + 4, treeBaseY);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Draw hearts inside the triangle
+      heartBodiesRef.current.forEach(({ body, item }) => {
+        const { x, y } = body.position;
+        const angle = body.angle;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+
+        if (item.imageUrl && imageCache.current.has(item.imageUrl)) {
+          // Heart clip with photo
+          ctx.beginPath();
+          drawHeartPath(ctx, 0, 0, 20);
+          ctx.closePath();
+          ctx.clip();
+          const img = imageCache.current.get(item.imageUrl)!;
+          ctx.drawImage(img, -20, -20, 40, 40);
+        } else {
+          // Solid lime heart
+          ctx.fillStyle = "#d8e592";
+          ctx.beginPath();
+          drawHeartPath(ctx, 0, 0, 20);
+          ctx.closePath();
+          ctx.fill();
+          
+          // Name text
+          if (item.name) {
+            ctx.fillStyle = "#474a37";
+            ctx.font = "bold 7px 'Noto Sans KR', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(item.name, 0, 5);
+          }
+        }
+
+        ctx.restore();
+      });
+
+      ctx.restore(); // end clip
+
+      // === Draw wooden frame border ===
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = "#8B6914";
+      ctx.lineJoin = "miter";
+      ctx.beginPath();
+      ctx.moveTo(apex.x, apex.y);
+      ctx.lineTo(bl.x, bl.y);
+      ctx.lineTo(br.x, br.y);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Outer highlight
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#A68B3C";
+      ctx.beginPath();
+      ctx.moveTo(apex.x, apex.y - 3);
+      ctx.lineTo(bl.x - 3, bl.y + 3);
+      ctx.lineTo(br.x + 3, br.y + 3);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Inner shadow
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#6B4F10";
+      ctx.beginPath();
+      ctx.moveTo(apex.x, apex.y + 6);
+      ctx.lineTo(bl.x + 5, bl.y - 4);
+      ctx.lineTo(br.x - 5, br.y - 4);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Multiple mountain peaks on top frame
+      const peakData = [
+        { x: apex.x - 50, h: 20 },
+        { x: apex.x, h: 30 },
+        { x: apex.x + 50, h: 22 },
+      ];
+      peakData.forEach(({ x: px, h }) => {
+        // Get Y on the frame at this X
+        const t = (px - apex.x) / (br.x - apex.x);
+        const baseY = apex.y + Math.abs(t) * (br.y - apex.y) * 0.15;
+        ctx.fillStyle = "#8B6914";
+        ctx.beginPath();
+        ctx.moveTo(px - 18, baseY);
+        ctx.lineTo(px, baseY - h);
+        ctx.lineTo(px + 18, baseY);
+        ctx.closePath();
+        ctx.fill();
+        // Snow cap
+        ctx.fillStyle = "#e8e8e0";
+        ctx.beginPath();
+        ctx.moveTo(px, baseY - h);
+        ctx.lineTo(px - 7, baseY - h + 8);
+        ctx.lineTo(px + 7, baseY - h + 8);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      animFrame = requestAnimationFrame(draw);
+    };
+
+    animFrame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animFrame);
+  }, [getLayout]);
+
+  const drawHeartPath = (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => {
+    const s = size;
+    const topY = cy - s * 0.4;
+    ctx.moveTo(cx, cy + s * 0.5);
+    ctx.bezierCurveTo(cx - s, cy - s * 0.1, cx - s * 0.6, topY - s * 0.3, cx, topY + s * 0.1);
+    ctx.bezierCurveTo(cx + s * 0.6, topY - s * 0.3, cx + s, cy - s * 0.1, cx, cy + s * 0.5);
   };
 
   const addHeart = useCallback(() => {
     if (!engineRef.current) return;
     if (hearts.length >= MAX_HEARTS) return;
 
-    const { w, topY } = getTriangleDimensions();
+    const { w, topY } = getLayout();
     const id = nextIdRef.current++;
-    const item: HeartItem = {
-      id,
-      name: name || "익명",
-      imageUrl: previewUrl || "",
-    };
+    const item: HeartItem = { id, name: name || "익명", imageUrl: previewUrl || "" };
 
-    // Create circular body for heart
-    const radius = 22;
-    const x = w / 2 + (Math.random() - 0.5) * 100;
-    const body = Matter.Bodies.circle(x, topY - 20, radius, {
-      restitution: 0.4,
-      friction: 0.3,
-      density: 0.002,
-      render: { fillStyle: "#d8e592" },
+    // Cache image
+    if (previewUrl) {
+      const img = new Image();
+      img.src = previewUrl;
+      img.onload = () => imageCache.current.set(previewUrl, img);
+    }
+
+    const radius = 18;
+    const x = w / 2 + (Math.random() - 0.5) * 80;
+    const body = Matter.Bodies.circle(x, topY - 10, radius, {
+      restitution: 0.3,
+      friction: 0.5,
+      density: 0.003,
+      render: { visible: false },
     });
 
     Matter.Composite.add(engineRef.current.world, body);
@@ -135,125 +316,43 @@ const SnapGuestbook = () => {
     setName("");
     setSelectedFile(null);
     setPreviewUrl("");
-  }, [hearts.length, name, previewUrl, getTriangleDimensions]);
+  }, [hearts.length, name, previewUrl, getLayout]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  // Custom rendering for hearts overlay
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    let animFrame: number;
-
-    const drawOverlay = () => {
-      const canvas = overlayCanvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      const { w, canvasH } = getTriangleDimensions();
-      canvas.width = w * (window.devicePixelRatio || 2);
-      canvas.height = canvasH * (window.devicePixelRatio || 2);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${canvasH}px`;
-      ctx.scale(window.devicePixelRatio || 2, window.devicePixelRatio || 2);
-      ctx.clearRect(0, 0, w, canvasH);
-
-      // Draw triangle frame
-      const { apex, bottomLeft, bottomRight } = getTriangleDimensions();
-      ctx.strokeStyle = "#8B6914";
-      ctx.lineWidth = 4;
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(apex.x, apex.y);
-      ctx.lineTo(bottomLeft.x, bottomLeft.y);
-      ctx.lineTo(bottomRight.x, bottomRight.y);
-      ctx.closePath();
-      ctx.stroke();
-
-      // Draw wood texture border
-      ctx.strokeStyle = "#A0722A";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 4]);
-      ctx.beginPath();
-      ctx.moveTo(apex.x, apex.y - 4);
-      ctx.lineTo(bottomLeft.x - 3, bottomLeft.y + 3);
-      ctx.lineTo(bottomRight.x + 3, bottomRight.y + 3);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw heart shapes at body positions
-      heartBodiesRef.current.forEach(({ body }) => {
-        const { x, y } = body.position;
-        const angle = body.angle;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-        drawHeart(ctx, 0, 0, 18, "#d8e592");
-        ctx.restore();
-      });
-
-      animFrame = requestAnimationFrame(drawOverlay);
-    };
-
-    animFrame = requestAnimationFrame(drawOverlay);
-    return () => cancelAnimationFrame(animFrame);
-  }, [getTriangleDimensions]);
-
-  const drawHeart = (
-    ctx: CanvasRenderingContext2D,
-    cx: number,
-    cy: number,
-    size: number,
-    color: string
-  ) => {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    const topY = cy - size * 0.4;
-    ctx.moveTo(cx, cy + size * 0.5);
-    ctx.bezierCurveTo(cx - size, cy - size * 0.1, cx - size * 0.6, topY - size * 0.3, cx, topY + size * 0.1);
-    ctx.bezierCurveTo(cx + size * 0.6, topY - size * 0.3, cx + size, cy - size * 0.1, cx, cy + size * 0.5);
-    ctx.fill();
-  };
-
-  const { w, canvasH } = getTriangleDimensions();
-
-  // Add sample hearts on mount
+  // Add sample hearts
   useEffect(() => {
     if (!engineRef.current) return;
     const timeout = setTimeout(() => {
-      const sampleNames = ["김민수", "이지은", "박준형", "최수연", "정하나"];
-      const { w: cw, topY } = getTriangleDimensions();
-
-      sampleNames.forEach((sampleName, i) => {
+      const samples = ["김민수", "이지은", "박준형", "최수연", "정하나", "홍길동", "강다연"];
+      const { w, topY } = getLayout();
+      samples.forEach((sampleName, i) => {
         setTimeout(() => {
           if (!engineRef.current) return;
           const id = nextIdRef.current++;
           const item: HeartItem = { id, name: sampleName, imageUrl: "" };
-          const radius = 22;
-          const x = cw / 2 + (Math.random() - 0.5) * 80;
-          const body = Matter.Bodies.circle(x, topY - 20, radius, {
-            restitution: 0.4,
-            friction: 0.3,
-            density: 0.002,
-            render: { fillStyle: "#d8e592" },
+          const radius = 18;
+          const x = w / 2 + (Math.random() - 0.5) * 60;
+          const body = Matter.Bodies.circle(x, topY - 10, radius, {
+            restitution: 0.3, friction: 0.5, density: 0.003,
+            render: { visible: false },
           });
           Matter.Composite.add(engineRef.current!.world, body);
           heartBodiesRef.current.set(id, { body, item });
           setHearts((prev) => [...prev, item]);
-        }, i * 400);
+        }, i * 350);
       });
     }, 500);
     return () => clearTimeout(timeout);
-  }, [getTriangleDimensions]);
+  }, [getLayout]);
+
+  const { w, canvasH } = getLayout();
 
   return (
     <div className="min-h-screen bg-[#474a37] flex justify-center">
@@ -267,22 +366,18 @@ const SnapGuestbook = () => {
           <div className="w-10" />
         </div>
 
-        {/* Mountain canvas area */}
-        <div ref={containerRef} className="relative" style={{ width: w, height: canvasH }}>
+        {/* Mountain canvas */}
+        <div ref={containerRef} className="relative mx-auto" style={{ width: w, height: canvasH }}>
           <canvas
             ref={canvasRef}
             style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH }}
           />
-          <canvas
-            ref={overlayCanvasRef}
-            style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH, pointerEvents: "none" }}
-          />
         </div>
 
         {/* Names and date */}
-        <div className="text-center py-6 space-y-2">
-          <p className="font-serif text-[#d8e592] text-lg">최준호 &amp; 이수연</p>
-          <p className="text-[#d8e592]/60 text-sm">2026년 6월 6일</p>
+        <div className="text-center py-4 space-y-1">
+          <p className="font-serif text-[#d8e592] text-lg tracking-wider">최준호 &amp; 이수연</p>
+          <p className="text-[#d8e592]/60 text-sm font-serif">2026년 6월 6일</p>
         </div>
 
         {/* Count + Add button */}
@@ -303,16 +398,13 @@ const SnapGuestbook = () => {
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
-            <div
-              className="w-full max-w-[480px] bg-[#474a37] border-t border-[#d8e592]/20 rounded-t-2xl p-6 animate-slide-up"
-            >
+            <div className="w-full max-w-[480px] bg-[#474a37] border-t border-[#d8e592]/20 rounded-t-2xl p-6 animate-slide-up">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-serif text-[#d8e592] text-lg">사진 올리기</h3>
                 <button onClick={() => setShowModal(false)} className="text-[#d8e592]">
                   <X size={20} />
                 </button>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="text-[#d8e592]/70 text-sm block mb-1">이름</label>
@@ -324,7 +416,6 @@ const SnapGuestbook = () => {
                     className="w-full bg-[#3a3d2e] border border-[#d8e592]/20 rounded-lg px-4 py-3 text-[#d8e592] text-sm placeholder:text-[#d8e592]/30 focus:outline-none focus:border-[#d8e592]/50"
                   />
                 </div>
-
                 <div>
                   <label className="text-[#d8e592]/70 text-sm block mb-1">사진</label>
                   {previewUrl ? (
@@ -344,7 +435,6 @@ const SnapGuestbook = () => {
                     </label>
                   )}
                 </div>
-
                 <button
                   onClick={addHeart}
                   className="w-full py-3 bg-[#d8e592] text-[#474a37] rounded-lg font-medium text-sm hover:bg-[#d8e592]/90 transition-colors"
