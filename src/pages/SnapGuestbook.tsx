@@ -355,7 +355,7 @@ const SnapGuestbook = () => {
   const { w, canvasH } = getLayout();
 
   return (
-    <div className="min-h-screen bg-[#474a37] flex justify-center">
+    <div className="min-h-screen bg-white flex justify-center">
       <div className="w-full max-w-[480px] min-h-screen relative">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
