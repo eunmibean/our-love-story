@@ -375,10 +375,12 @@ const SnapGuestbook = () => {
       img.onload = () => imageCache.current.set(heartImage, img);
     }
 
-    const radius = 20;
-    // Spawn well inside the triangle (just below the apex)
-    const x = w / 2 + (Math.random() - 0.5) * 30;
-    const body = Matter.Bodies.circle(x, topY + 70, radius, {
+    const radius = 16;
+    // Spawn inside the triangle, just below the peak zone
+    const { apex, bl } = getLayout();
+    const spawnY = apex.y + (bl.y - apex.y) * 0.55;
+    const x = w / 2 + (Math.random() - 0.5) * 40;
+    const body = Matter.Bodies.circle(x, spawnY, radius, {
       restitution: 0.25,
       friction: 0.6,
       density: 0.003,
