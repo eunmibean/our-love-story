@@ -35,29 +35,30 @@ const SnapGuestbook = () => {
 
   const getLayout = useCallback(() => {
     const w = Math.min(window.innerWidth, 480);
-    const padding = 24;
+    const padding = 16;
     const triW = w - padding * 2;
-    const triH = triW * 0.95;
-    const topY = 70; // leave room for peaks above
+    const triH = triW * 0.88;
+    const topY = 24;
     const apex = { x: w / 2, y: topY };
     const bl = { x: padding, y: topY + triH };
     const br = { x: w - padding, y: topY + triH };
     return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 30 };
   }, []);
 
-  // Setup Matter.js engine + walls — walls inset slightly so hearts sit inside the visible triangle
+  // Setup Matter.js engine + walls — full triangle so hearts stay inside the wooden frame
   useEffect(() => {
     const { apex, bl, br } = getLayout();
 
     const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.9 } });
     engineRef.current = engine;
 
-    // Inset apex downward and corners inward so hearts settle inside the dark interior
-    const insetApex = { x: apex.x, y: apex.y + 30 };
-    const insetBL = { x: bl.x + 14, y: bl.y - 8 };
-    const insetBR = { x: br.x - 14, y: br.y - 8 };
+    // Inset the triangle so hearts settle inside the dark interior pocket
+    const insetTop = (bl.y - apex.y) * 0.5; // start walls below the peaks zone
+    const insetApex = { x: apex.x, y: apex.y + insetTop };
+    const insetBL = { x: bl.x + 28, y: bl.y - 26 };
+    const insetBR = { x: br.x - 28, y: br.y - 26 };
 
-    const wallThick = 24;
+    const wallThick = 30;
     const makeWall = (p1: {x:number;y:number}, p2: {x:number;y:number}) => {
       const cx = (p1.x + p2.x) / 2;
       const cy = (p1.y + p2.y) / 2;
@@ -97,62 +98,75 @@ const SnapGuestbook = () => {
     ctx.bezierCurveTo(cx + s * 0.55, topY - s * 0.35, cx + s * 1.05, cy - s * 0.05, cx, cy + s * 0.55);
   };
 
-  // Refined mountain silhouette path - smooth, sophisticated
-  const buildMountainPath = (
+  // Outer triangle frame path (the big wooden triangle)
+  const buildTrianglePath = (
     ctx: CanvasRenderingContext2D,
     apex: {x:number;y:number},
     bl: {x:number;y:number},
     br: {x:number;y:number},
     inset: number,
   ) => {
-    // Three peaks above the apex line — soft, asymmetric, refined
-    const baseY = apex.y + 8; // ridge baseline where peaks emerge
-    const p1 = { x: apex.x - 62, h: 44 };
-    const p2 = { x: apex.x + 4,  h: 72 }; // tallest, slightly off-center
-    const p3 = { x: apex.x + 64, h: 50 };
-
     ctx.beginPath();
-    // Start bottom-left
-    ctx.moveTo(bl.x - inset, bl.y + inset);
-    // Smooth diagonal to start of left peak base
-    ctx.quadraticCurveTo(
-      (bl.x + p1.x) / 2 - 6, (bl.y + baseY) / 2,
-      p1.x - 30, baseY
-    );
-    // Up to peak 1
-    ctx.lineTo(p1.x, baseY - p1.h);
-    // Down into valley
-    ctx.lineTo(p1.x + 18, baseY - 6);
-    // Up to peak 2 (tallest)
-    ctx.lineTo(p2.x, baseY - p2.h);
-    // Valley
-    ctx.lineTo(p2.x + 24, baseY - 4);
-    // Up to peak 3
-    ctx.lineTo(p3.x, baseY - p3.h);
-    // Slope down
-    ctx.lineTo(p3.x + 28, baseY);
-    // Smooth diagonal to bottom-right
-    ctx.quadraticCurveTo(
-      (br.x + p3.x) / 2 + 6, (br.y + baseY) / 2,
-      br.x + inset, br.y + inset
-    );
+    ctx.moveTo(apex.x, apex.y + inset * 1.2);
+    ctx.lineTo(br.x - inset, br.y - inset);
+    ctx.lineTo(bl.x + inset, bl.y - inset);
+    ctx.closePath();
+  };
+
+  // Three inner mountain peaks (shaped like the reference photo)
+  // Returns peak geometry for snow caps
+  const getPeaks = (apex: {x:number;y:number}, bl: {x:number;y:number}, br: {x:number;y:number}) => {
+    const cx = apex.x;
+    const baseY = apex.y + (bl.y - apex.y) * 0.55; // peaks base around middle
+    const triW = br.x - bl.x;
+    const scale = triW / 360;
+    return [
+      { x: cx - 70 * scale, y: baseY - 95 * scale, w: 110 * scale, baseY }, // left
+      { x: cx + 8 * scale,  y: baseY - 145 * scale, w: 130 * scale, baseY }, // center (tallest)
+      { x: cx + 78 * scale, y: baseY - 80 * scale, w: 100 * scale, baseY }, // right
+    ];
+  };
+
+  const buildPeakPath = (
+    ctx: CanvasRenderingContext2D,
+    p: { x: number; y: number; w: number; baseY: number },
+  ) => {
+    // Smooth mountain peak (rounded triangle)
+    const left = p.x - p.w / 2;
+    const right = p.x + p.w / 2;
+    ctx.beginPath();
+    ctx.moveTo(left, p.baseY);
+    ctx.quadraticCurveTo(p.x - p.w * 0.18, p.y + p.w * 0.15, p.x, p.y);
+    ctx.quadraticCurveTo(p.x + p.w * 0.18, p.y + p.w * 0.15, right, p.baseY);
+    ctx.closePath();
+  };
+
+  // Snow cap on top of a peak
+  const buildSnowCap = (
+    ctx: CanvasRenderingContext2D,
+    p: { x: number; y: number; w: number; baseY: number },
+  ) => {
+    const capH = p.w * 0.42;
+    const capBottomY = p.y + capH;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    // right side following peak
+    ctx.quadraticCurveTo(p.x + p.w * 0.09, p.y + capH * 0.45, p.x + p.w * 0.22, capBottomY);
+    // wavy bottom edge of snow
+    ctx.quadraticCurveTo(p.x + p.w * 0.14, capBottomY - 4, p.x + p.w * 0.06, capBottomY);
+    ctx.quadraticCurveTo(p.x - p.w * 0.02, capBottomY + 5, p.x - p.w * 0.10, capBottomY - 1);
+    ctx.quadraticCurveTo(p.x - p.w * 0.18, capBottomY - 6, p.x - p.w * 0.22, capBottomY);
+    // left side back to apex
+    ctx.quadraticCurveTo(p.x - p.w * 0.09, p.y + capH * 0.45, p.x, p.y);
     ctx.closePath();
   };
 
   const drawTree = (ctx: CanvasRenderingContext2D, x: number, baseY: number, h: number) => {
-    const w = h * 0.45;
+    const w = h * 0.5;
     ctx.beginPath();
     ctx.moveTo(x, baseY - h);
-    ctx.lineTo(x - w / 2, baseY - h * 0.6);
-    ctx.lineTo(x - w / 4, baseY - h * 0.6);
-    ctx.lineTo(x - w / 1.7, baseY - h * 0.25);
-    ctx.lineTo(x - w / 3.5, baseY - h * 0.25);
-    ctx.lineTo(x - w / 2.2, baseY);
-    ctx.lineTo(x + w / 2.2, baseY);
-    ctx.lineTo(x + w / 3.5, baseY - h * 0.25);
-    ctx.lineTo(x + w / 1.7, baseY - h * 0.25);
-    ctx.lineTo(x + w / 4, baseY - h * 0.6);
-    ctx.lineTo(x + w / 2, baseY - h * 0.6);
+    ctx.lineTo(x - w / 2, baseY);
+    ctx.lineTo(x + w / 2, baseY);
     ctx.closePath();
     ctx.fill();
   };
@@ -160,18 +174,6 @@ const SnapGuestbook = () => {
   // Render loop
   useEffect(() => {
     let animFrame: number;
-    const { bl: lbl, br: lbr } = getLayout();
-    const trees: { x: number; h: number }[] = [];
-    const triBaseW = lbr.x - lbl.x;
-    const treeCount = Math.floor(triBaseW / 14);
-    for (let i = 0; i < treeCount; i++) {
-      const t = (i + 0.5) / treeCount;
-      const x = lbl.x + 18 + t * (triBaseW - 36);
-      // Height tapers near the triangle edges
-      const edgeFactor = Math.min(t, 1 - t) * 2; // 0..1
-      const h = (22 + ((i * 53) % 16)) * (0.55 + 0.45 * edgeFactor);
-      trees.push({ x, h });
-    }
 
     const draw = () => {
       const canvas = canvasRef.current;
@@ -188,42 +190,95 @@ const SnapGuestbook = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, canvasH);
 
-      const woodOuter = "#7B5A3A";
-      const woodInner = "#5A3F25";
-      const interior = "#2E2A22";
-      const interiorTop = "#3A352B";
+      // Wood tones
+      const woodOuter = "#6b4a2b";
+      const woodMid = "#5a3d22";
+      const woodInner = "#7a5535";
+      const interior = "#3a3d2a";   // dark olive
+      const interiorTop = "#454832";
+      const snow = "#f4ede0";
+      const snowShadow = "#d9cfbb";
 
-      // Outer wood frame (thick)
-      buildMountainPath(ctx, apex, bl, br, 7);
+      // 1) Outer wooden triangle (big frame)
+      buildTrianglePath(ctx, apex, bl, br, 0);
       ctx.fillStyle = woodOuter;
       ctx.fill();
 
-      // Inner edge (subtle inner shadow line)
-      buildMountainPath(ctx, apex, bl, br, 0);
-      ctx.fillStyle = woodInner;
+      // Wood grain shading on outer frame
+      const woodGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
+      woodGrad.addColorStop(0, "#7a5535");
+      woodGrad.addColorStop(0.5, "#6b4a2b");
+      woodGrad.addColorStop(1, "#4e3520");
+      buildTrianglePath(ctx, apex, bl, br, 0);
+      ctx.fillStyle = woodGrad;
       ctx.fill();
 
-      // Interior with subtle gradient
+      // 2) Inner dark olive area (the "pocket" inside the frame)
       ctx.save();
-      buildMountainPath(ctx, apex, bl, br, -3);
+      buildTrianglePath(ctx, apex, bl, br, 18);
       ctx.clip();
 
-      const grad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
-      grad.addColorStop(0, interiorTop);
-      grad.addColorStop(1, interior);
-      ctx.fillStyle = grad;
+      const interiorGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
+      interiorGrad.addColorStop(0, interiorTop);
+      interiorGrad.addColorStop(1, interior);
+      ctx.fillStyle = interiorGrad;
       ctx.fillRect(0, 0, w, canvasH);
 
-      // Pine forest at the base — two layers for depth
-      ctx.fillStyle = "#39443018";
-      ctx.fillStyle = "#3D4A33";
-      trees.forEach(({ x, h }) => drawTree(ctx, x, bl.y - 4, h));
-      ctx.fillStyle = "#283322";
-      trees.forEach(({ x, h }, i) => {
-        if (i % 2 === 0) drawTree(ctx, x + 5, bl.y - 4, h * 0.85);
+      // 3) Three mountain peaks (wood colored) inside the frame
+      const peaks = getPeaks(apex, bl, br);
+      peaks.forEach((p) => {
+        // Peak shadow
+        buildPeakPath(ctx, p);
+        const pgrad = ctx.createLinearGradient(p.x - p.w / 2, p.y, p.x + p.w / 2, p.baseY);
+        pgrad.addColorStop(0, "#8a6038");
+        pgrad.addColorStop(0.5, woodInner);
+        pgrad.addColorStop(1, woodMid);
+        ctx.fillStyle = pgrad;
+        ctx.fill();
+
+        // Subtle ridge highlight on the right side of each peak
+        ctx.save();
+        buildPeakPath(ctx, p);
+        ctx.clip();
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.w / 2, p.baseY);
+        ctx.lineTo(p.x, p.baseY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
       });
 
-      // Hearts inside
+      // 4) Snow caps on each peak
+      peaks.forEach((p) => {
+        buildSnowCap(ctx, p);
+        ctx.fillStyle = snow;
+        ctx.fill();
+        // small shadow under snow
+        ctx.save();
+        buildSnowCap(ctx, p);
+        ctx.clip();
+        ctx.fillStyle = snowShadow;
+        ctx.beginPath();
+        ctx.ellipse(p.x + p.w * 0.05, p.y + p.w * 0.35, p.w * 0.18, p.w * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 5) Pine forest at the base
+      const baseY = bl.y - 22;
+      const triBaseW = br.x - bl.x;
+      const treeCount = Math.floor(triBaseW / 16);
+      ctx.fillStyle = "#2a3320";
+      for (let i = 0; i < treeCount; i++) {
+        const t = (i + 0.5) / treeCount;
+        const x = bl.x + 24 + t * (triBaseW - 48);
+        const h = 14 + ((i * 53) % 8);
+        drawTree(ctx, x, baseY, h);
+      }
+
+      // 6) Hearts inside (drawn over peaks/forest, clipped to interior)
       heartBodiesRef.current.forEach(({ body, item }) => {
         const { x, y } = body.position;
         const angle = body.angle;
@@ -231,7 +286,7 @@ const SnapGuestbook = () => {
         ctx.translate(x, y);
         ctx.rotate(angle);
 
-        const size = 22;
+        const size = 18;
         if (item.imageUrl && imageCache.current.has(item.imageUrl)) {
           ctx.save();
           ctx.beginPath();
@@ -250,36 +305,46 @@ const SnapGuestbook = () => {
             drawH
           );
           ctx.restore();
-          // outline
           ctx.beginPath();
           drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.2;
           ctx.strokeStyle = "rgba(255,255,255,0.85)";
           ctx.stroke();
         } else {
           ctx.beginPath();
           drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
-          ctx.lineWidth = 1.6;
-          ctx.strokeStyle = "rgba(255,255,255,0.9)";
+          ctx.fillStyle = "#c9a878";
+          ctx.fill();
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = "rgba(60,40,20,0.6)";
           ctx.stroke();
           if (item.name) {
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "600 7px 'Noto Sans KR', sans-serif";
+            ctx.fillStyle = "#3a2818";
+            ctx.font = "600 6px 'Noto Sans KR', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(item.name, 0, 4);
+            ctx.fillText(item.name.slice(0, 4), 0, 3);
           }
         }
         ctx.restore();
       });
 
-      ctx.restore(); // end clip
+      ctx.restore(); // end interior clip
 
-      // Crisp outer outline on top
-      buildMountainPath(ctx, apex, bl, br, 7);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "#4a3520";
+      // 7) Couple name + date inside the frame (top area)
+      ctx.fillStyle = "#e8dcc4";
+      ctx.textAlign = "center";
+      ctx.font = "600 18px 'Gowun Batang', serif";
+      ctx.fillText("최준호 & 이수연", apex.x, apex.y + (bl.y - apex.y) * 0.36);
+      ctx.font = "500 13px 'Gowun Batang', serif";
+      ctx.fillStyle = "#cfc1a4";
+      ctx.fillText("2026년 6월 6일", apex.x, apex.y + (bl.y - apex.y) * 0.44);
+
+      // 8) Outer frame outline
+      buildTrianglePath(ctx, apex, bl, br, 0);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#3a2515";
       ctx.stroke();
 
       animFrame = requestAnimationFrame(draw);
@@ -310,10 +375,12 @@ const SnapGuestbook = () => {
       img.onload = () => imageCache.current.set(heartImage, img);
     }
 
-    const radius = 20;
-    // Spawn well inside the triangle (just below the apex)
-    const x = w / 2 + (Math.random() - 0.5) * 30;
-    const body = Matter.Bodies.circle(x, topY + 70, radius, {
+    const radius = 16;
+    // Spawn inside the triangle, just below the peak zone
+    const { apex, bl } = getLayout();
+    const spawnY = apex.y + (bl.y - apex.y) * 0.55;
+    const x = w / 2 + (Math.random() - 0.5) * 40;
+    const body = Matter.Bodies.circle(x, spawnY, radius, {
       restitution: 0.25,
       friction: 0.6,
       density: 0.003,
@@ -381,14 +448,21 @@ const SnapGuestbook = () => {
   const { w, canvasH } = getLayout();
 
   return (
-    <div className="min-h-screen bg-white flex justify-center">
+    <div
+      className="min-h-screen flex justify-center"
+      style={{
+        backgroundColor: "#474A37",
+        backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)",
+        backgroundSize: "14px 14px",
+      }}
+    >
       <div className="w-full max-w-[480px] min-h-screen relative pb-16">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => navigate("/")} className="text-olive-dark p-2">
+          <button onClick={() => navigate("/")} className="text-white/90 p-2">
             <ArrowLeft size={24} />
           </button>
-          <h1 className="font-serif text-olive-dark text-lg">스냅 방명록</h1>
+          <h1 className="font-serif text-white text-lg">스냅 방명록</h1>
           <div className="w-10" />
         </div>
 
@@ -397,22 +471,16 @@ const SnapGuestbook = () => {
           <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH }} />
         </div>
 
-        {/* Names and date */}
-        <div className="text-center py-3 space-y-1">
-          <p className="font-serif text-olive-dark text-base tracking-wider">최준호 &amp; 이수연</p>
-          <p className="text-olive-dark/60 text-sm font-serif">2026년 6월 6일</p>
-        </div>
-
         {/* Form */}
         <div className="px-6 pt-4 space-y-5">
           {/* Name */}
           <div className="flex items-center gap-3">
-            <label className="font-serif text-olive-dark text-base shrink-0">이름</label>
+            <label className="font-serif text-white text-base shrink-0">이름</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 border-2 border-olive-dark/70 rounded-md px-3 py-2 text-olive-dark text-sm focus:outline-none focus:border-olive-dark bg-transparent"
+              className="flex-1 border-2 border-white/40 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-white bg-transparent"
             />
           </div>
 
@@ -420,12 +488,12 @@ const SnapGuestbook = () => {
           <div className="flex items-start gap-4">
             {/* Gallery upload (max 30) */}
             <div className="flex-1">
-              <p className="text-olive-dark/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
-              <label className="flex items-center justify-center w-full h-14 border-2 border-olive-dark/70 rounded-md cursor-pointer hover:bg-olive-light/10 transition-colors">
-                <span className="text-olive-dark text-sm">+ 추가하기</span>
+              <p className="text-white/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
+              <label className="flex items-center justify-center w-full h-14 border-2 border-white/40 rounded-md cursor-pointer hover:bg-white/10 transition-colors">
+                <span className="text-white text-sm">+ 추가하기</span>
                 <input type="file" accept="image/*,video/*" multiple onChange={handleGalleryChange} className="hidden" />
               </label>
-              <p className="text-olive-dark/60 text-xs mt-1 text-center">
+              <p className="text-white/60 text-xs mt-1 text-center">
                 {galleryFiles.length} / {MAX_GALLERY}장
               </p>
               {galleryUrls.length > 0 && (
@@ -448,7 +516,7 @@ const SnapGuestbook = () => {
 
             {/* Hero (single) */}
             <div className="w-24">
-              <p className="text-olive-dark/80 text-xs mb-1.5 text-center">대표사진추가</p>
+              <p className="text-white/80 text-xs mb-1.5 text-center">대표사진추가</p>
               <label className="relative flex items-center justify-center cursor-pointer w-24 h-24 group">
                 {/* Heart shape via SVG */}
                 <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
@@ -470,21 +538,20 @@ const SnapGuestbook = () => {
                   )}
                   <path
                     d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z"
-                    fill="none"
-                    stroke="hsl(var(--olive-dark, 70 12% 25%))"
+                    fill={heroUrl ? "none" : "rgba(255,255,255,0.08)"}
+                    stroke="#ffffff"
                     strokeWidth="2.5"
-                    style={{ stroke: "#474A37" }}
                   />
                 </svg>
                 {!heroUrl && (
-                  <span className="relative text-olive-dark text-xs font-medium pointer-events-none">+ 추가하기</span>
+                  <span className="relative text-white text-xs font-medium pointer-events-none">+ 추가하기</span>
                 )}
                 <input type="file" accept="image/*" onChange={handleHeroChange} className="hidden" />
               </label>
               {heroUrl && (
                 <button
                   onClick={() => setShowAdjust(true)}
-                  className="block mx-auto mt-1 text-[10px] text-olive-dark/70 underline"
+                  className="block mx-auto mt-1 text-[10px] text-white/70 underline"
                 >
                   사진 조정
                 </button>
@@ -497,13 +564,13 @@ const SnapGuestbook = () => {
             <button
               onClick={handleUpload}
               disabled={hearts.length >= MAX_HEARTS}
-              className="px-10 py-2 border-2 border-olive-dark rounded-md text-olive-dark font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
+              className="px-10 py-2 border-2 border-white/60 rounded-md text-white font-serif text-base hover:bg-white/10 transition-colors disabled:opacity-40"
             >
               올리기
             </button>
           </div>
 
-          <p className="text-center text-olive-dark/50 text-xs">
+          <p className="text-center text-white/50 text-xs">
             하트 {hearts.length} / {MAX_HEARTS}
           </p>
         </div>
@@ -513,8 +580,8 @@ const SnapGuestbook = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
             <div className="w-full max-w-[360px] bg-white rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-serif text-olive-dark text-base">하트 안에 사진 맞추기</h3>
-                <button onClick={() => setShowAdjust(false)} className="text-olive-dark"><X size={20} /></button>
+                <h3 className="font-serif text-white text-base">하트 안에 사진 맞추기</h3>
+                <button onClick={() => setShowAdjust(false)} className="text-white"><X size={20} /></button>
               </div>
 
               {/* Drag area */}
@@ -551,7 +618,7 @@ const SnapGuestbook = () => {
 
               {/* Zoom slider */}
               <div className="space-y-1">
-                <label className="text-xs text-olive-dark/70">확대 / 축소</label>
+                <label className="text-xs text-white/70">확대 / 축소</label>
                 <input
                   type="range"
                   min={0.5}
@@ -566,7 +633,7 @@ const SnapGuestbook = () => {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setHeroOffset({ x: 0, y: 0, scale: 1.2 })}
-                  className="flex-1 py-2 border border-olive-dark/40 rounded-md text-olive-dark text-sm"
+                  className="flex-1 py-2 border border-olive-dark/40 rounded-md text-white text-sm"
                 >
                   초기화
                 </button>
