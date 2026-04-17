@@ -459,22 +459,16 @@ const SnapGuestbook = () => {
       <div className="w-full max-w-[480px] min-h-screen relative pb-16">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => navigate("/")} className="text-olive-dark p-2">
+          <button onClick={() => navigate("/")} className="text-white/90 p-2">
             <ArrowLeft size={24} />
           </button>
-          <h1 className="font-serif text-olive-dark text-lg">스냅 방명록</h1>
+          <h1 className="font-serif text-white text-lg">스냅 방명록</h1>
           <div className="w-10" />
         </div>
 
         {/* Mountain canvas */}
         <div ref={containerRef} className="relative mx-auto" style={{ width: w, height: canvasH }}>
           <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH }} />
-        </div>
-
-        {/* Names and date */}
-        <div className="text-center py-3 space-y-1">
-          <p className="font-serif text-olive-dark text-base tracking-wider">최준호 &amp; 이수연</p>
-          <p className="text-olive-dark/60 text-sm font-serif">2026년 6월 6일</p>
         </div>
 
         {/* Form */}
