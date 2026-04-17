@@ -45,19 +45,20 @@ const SnapGuestbook = () => {
     return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 30 };
   }, []);
 
-  // Setup Matter.js engine + walls — walls inset slightly so hearts sit inside the visible triangle
+  // Setup Matter.js engine + walls — full triangle so hearts stay inside the wooden frame
   useEffect(() => {
     const { apex, bl, br } = getLayout();
 
     const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.9 } });
     engineRef.current = engine;
 
-    // Inset apex downward and corners inward so hearts settle inside the dark interior
-    const insetApex = { x: apex.x, y: apex.y + 30 };
-    const insetBL = { x: bl.x + 14, y: bl.y - 8 };
-    const insetBR = { x: br.x - 14, y: br.y - 8 };
+    // Inset the triangle so hearts settle inside the dark interior pocket
+    const insetTop = (bl.y - apex.y) * 0.5; // start walls below the peaks zone
+    const insetApex = { x: apex.x, y: apex.y + insetTop };
+    const insetBL = { x: bl.x + 28, y: bl.y - 26 };
+    const insetBR = { x: br.x - 28, y: br.y - 26 };
 
-    const wallThick = 24;
+    const wallThick = 30;
     const makeWall = (p1: {x:number;y:number}, p2: {x:number;y:number}) => {
       const cx = (p1.x + p2.x) / 2;
       const cy = (p1.y + p2.y) / 2;
