@@ -565,7 +565,7 @@ const SnapGuestbook = () => {
             <button
               onClick={handleUpload}
               disabled={hearts.length >= MAX_HEARTS}
-              className="px-10 py-2 border-2 border-olive-dark rounded-md text-white font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
+              className="px-10 py-2 border-2 border-white/60 rounded-md text-white font-serif text-base hover:bg-white/10 transition-colors disabled:opacity-40"
             >
               올리기
             </button>
