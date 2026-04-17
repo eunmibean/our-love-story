@@ -538,10 +538,9 @@ const SnapGuestbook = () => {
                   )}
                   <path
                     d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z"
-                    fill="none"
-                    stroke="hsl(var(--olive-dark, 70 12% 25%))"
+                    fill={heroUrl ? "none" : "rgba(255,255,255,0.08)"}
+                    stroke="#ffffff"
                     strokeWidth="2.5"
-                    style={{ stroke: "#474A37" }}
                   />
                 </svg>
                 {!heroUrl && (
