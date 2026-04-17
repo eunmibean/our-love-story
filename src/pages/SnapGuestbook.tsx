@@ -97,62 +97,75 @@ const SnapGuestbook = () => {
     ctx.bezierCurveTo(cx + s * 0.55, topY - s * 0.35, cx + s * 1.05, cy - s * 0.05, cx, cy + s * 0.55);
   };
 
-  // Refined mountain silhouette path - smooth, sophisticated
-  const buildMountainPath = (
+  // Outer triangle frame path (the big wooden triangle)
+  const buildTrianglePath = (
     ctx: CanvasRenderingContext2D,
     apex: {x:number;y:number},
     bl: {x:number;y:number},
     br: {x:number;y:number},
     inset: number,
   ) => {
-    // Three peaks above the apex line — soft, asymmetric, refined
-    const baseY = apex.y + 8; // ridge baseline where peaks emerge
-    const p1 = { x: apex.x - 62, h: 44 };
-    const p2 = { x: apex.x + 4,  h: 72 }; // tallest, slightly off-center
-    const p3 = { x: apex.x + 64, h: 50 };
-
     ctx.beginPath();
-    // Start bottom-left
-    ctx.moveTo(bl.x - inset, bl.y + inset);
-    // Smooth diagonal to start of left peak base
-    ctx.quadraticCurveTo(
-      (bl.x + p1.x) / 2 - 6, (bl.y + baseY) / 2,
-      p1.x - 30, baseY
-    );
-    // Up to peak 1
-    ctx.lineTo(p1.x, baseY - p1.h);
-    // Down into valley
-    ctx.lineTo(p1.x + 18, baseY - 6);
-    // Up to peak 2 (tallest)
-    ctx.lineTo(p2.x, baseY - p2.h);
-    // Valley
-    ctx.lineTo(p2.x + 24, baseY - 4);
-    // Up to peak 3
-    ctx.lineTo(p3.x, baseY - p3.h);
-    // Slope down
-    ctx.lineTo(p3.x + 28, baseY);
-    // Smooth diagonal to bottom-right
-    ctx.quadraticCurveTo(
-      (br.x + p3.x) / 2 + 6, (br.y + baseY) / 2,
-      br.x + inset, br.y + inset
-    );
+    ctx.moveTo(apex.x, apex.y + inset * 1.2);
+    ctx.lineTo(br.x - inset, br.y - inset);
+    ctx.lineTo(bl.x + inset, bl.y - inset);
+    ctx.closePath();
+  };
+
+  // Three inner mountain peaks (shaped like the reference photo)
+  // Returns peak geometry for snow caps
+  const getPeaks = (apex: {x:number;y:number}, bl: {x:number;y:number}, br: {x:number;y:number}) => {
+    const cx = apex.x;
+    const baseY = apex.y + (bl.y - apex.y) * 0.55; // peaks base around middle
+    const triW = br.x - bl.x;
+    const scale = triW / 360;
+    return [
+      { x: cx - 70 * scale, y: baseY - 95 * scale, w: 110 * scale, baseY }, // left
+      { x: cx + 8 * scale,  y: baseY - 145 * scale, w: 130 * scale, baseY }, // center (tallest)
+      { x: cx + 78 * scale, y: baseY - 80 * scale, w: 100 * scale, baseY }, // right
+    ];
+  };
+
+  const buildPeakPath = (
+    ctx: CanvasRenderingContext2D,
+    p: { x: number; y: number; w: number; baseY: number },
+  ) => {
+    // Smooth mountain peak (rounded triangle)
+    const left = p.x - p.w / 2;
+    const right = p.x + p.w / 2;
+    ctx.beginPath();
+    ctx.moveTo(left, p.baseY);
+    ctx.quadraticCurveTo(p.x - p.w * 0.18, p.y + p.w * 0.15, p.x, p.y);
+    ctx.quadraticCurveTo(p.x + p.w * 0.18, p.y + p.w * 0.15, right, p.baseY);
+    ctx.closePath();
+  };
+
+  // Snow cap on top of a peak
+  const buildSnowCap = (
+    ctx: CanvasRenderingContext2D,
+    p: { x: number; y: number; w: number; baseY: number },
+  ) => {
+    const capH = p.w * 0.42;
+    const capBottomY = p.y + capH;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    // right side following peak
+    ctx.quadraticCurveTo(p.x + p.w * 0.09, p.y + capH * 0.45, p.x + p.w * 0.22, capBottomY);
+    // wavy bottom edge of snow
+    ctx.quadraticCurveTo(p.x + p.w * 0.14, capBottomY - 4, p.x + p.w * 0.06, capBottomY);
+    ctx.quadraticCurveTo(p.x - p.w * 0.02, capBottomY + 5, p.x - p.w * 0.10, capBottomY - 1);
+    ctx.quadraticCurveTo(p.x - p.w * 0.18, capBottomY - 6, p.x - p.w * 0.22, capBottomY);
+    // left side back to apex
+    ctx.quadraticCurveTo(p.x - p.w * 0.09, p.y + capH * 0.45, p.x, p.y);
     ctx.closePath();
   };
 
   const drawTree = (ctx: CanvasRenderingContext2D, x: number, baseY: number, h: number) => {
-    const w = h * 0.45;
+    const w = h * 0.5;
     ctx.beginPath();
     ctx.moveTo(x, baseY - h);
-    ctx.lineTo(x - w / 2, baseY - h * 0.6);
-    ctx.lineTo(x - w / 4, baseY - h * 0.6);
-    ctx.lineTo(x - w / 1.7, baseY - h * 0.25);
-    ctx.lineTo(x - w / 3.5, baseY - h * 0.25);
-    ctx.lineTo(x - w / 2.2, baseY);
-    ctx.lineTo(x + w / 2.2, baseY);
-    ctx.lineTo(x + w / 3.5, baseY - h * 0.25);
-    ctx.lineTo(x + w / 1.7, baseY - h * 0.25);
-    ctx.lineTo(x + w / 4, baseY - h * 0.6);
-    ctx.lineTo(x + w / 2, baseY - h * 0.6);
+    ctx.lineTo(x - w / 2, baseY);
+    ctx.lineTo(x + w / 2, baseY);
     ctx.closePath();
     ctx.fill();
   };
@@ -160,18 +173,6 @@ const SnapGuestbook = () => {
   // Render loop
   useEffect(() => {
     let animFrame: number;
-    const { bl: lbl, br: lbr } = getLayout();
-    const trees: { x: number; h: number }[] = [];
-    const triBaseW = lbr.x - lbl.x;
-    const treeCount = Math.floor(triBaseW / 14);
-    for (let i = 0; i < treeCount; i++) {
-      const t = (i + 0.5) / treeCount;
-      const x = lbl.x + 18 + t * (triBaseW - 36);
-      // Height tapers near the triangle edges
-      const edgeFactor = Math.min(t, 1 - t) * 2; // 0..1
-      const h = (22 + ((i * 53) % 16)) * (0.55 + 0.45 * edgeFactor);
-      trees.push({ x, h });
-    }
 
     const draw = () => {
       const canvas = canvasRef.current;
@@ -188,42 +189,95 @@ const SnapGuestbook = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, canvasH);
 
-      const woodOuter = "#7B5A3A";
-      const woodInner = "#5A3F25";
-      const interior = "#2E2A22";
-      const interiorTop = "#3A352B";
+      // Wood tones
+      const woodOuter = "#6b4a2b";
+      const woodMid = "#5a3d22";
+      const woodInner = "#7a5535";
+      const interior = "#3a3d2a";   // dark olive
+      const interiorTop = "#454832";
+      const snow = "#f4ede0";
+      const snowShadow = "#d9cfbb";
 
-      // Outer wood frame (thick)
-      buildMountainPath(ctx, apex, bl, br, 7);
+      // 1) Outer wooden triangle (big frame)
+      buildTrianglePath(ctx, apex, bl, br, 0);
       ctx.fillStyle = woodOuter;
       ctx.fill();
 
-      // Inner edge (subtle inner shadow line)
-      buildMountainPath(ctx, apex, bl, br, 0);
-      ctx.fillStyle = woodInner;
+      // Wood grain shading on outer frame
+      const woodGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
+      woodGrad.addColorStop(0, "#7a5535");
+      woodGrad.addColorStop(0.5, "#6b4a2b");
+      woodGrad.addColorStop(1, "#4e3520");
+      buildTrianglePath(ctx, apex, bl, br, 0);
+      ctx.fillStyle = woodGrad;
       ctx.fill();
 
-      // Interior with subtle gradient
+      // 2) Inner dark olive area (the "pocket" inside the frame)
       ctx.save();
-      buildMountainPath(ctx, apex, bl, br, -3);
+      buildTrianglePath(ctx, apex, bl, br, 18);
       ctx.clip();
 
-      const grad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
-      grad.addColorStop(0, interiorTop);
-      grad.addColorStop(1, interior);
-      ctx.fillStyle = grad;
+      const interiorGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
+      interiorGrad.addColorStop(0, interiorTop);
+      interiorGrad.addColorStop(1, interior);
+      ctx.fillStyle = interiorGrad;
       ctx.fillRect(0, 0, w, canvasH);
 
-      // Pine forest at the base — two layers for depth
-      ctx.fillStyle = "#39443018";
-      ctx.fillStyle = "#3D4A33";
-      trees.forEach(({ x, h }) => drawTree(ctx, x, bl.y - 4, h));
-      ctx.fillStyle = "#283322";
-      trees.forEach(({ x, h }, i) => {
-        if (i % 2 === 0) drawTree(ctx, x + 5, bl.y - 4, h * 0.85);
+      // 3) Three mountain peaks (wood colored) inside the frame
+      const peaks = getPeaks(apex, bl, br);
+      peaks.forEach((p) => {
+        // Peak shadow
+        buildPeakPath(ctx, p);
+        const pgrad = ctx.createLinearGradient(p.x - p.w / 2, p.y, p.x + p.w / 2, p.baseY);
+        pgrad.addColorStop(0, "#8a6038");
+        pgrad.addColorStop(0.5, woodInner);
+        pgrad.addColorStop(1, woodMid);
+        ctx.fillStyle = pgrad;
+        ctx.fill();
+
+        // Subtle ridge highlight on the right side of each peak
+        ctx.save();
+        buildPeakPath(ctx, p);
+        ctx.clip();
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + p.w / 2, p.baseY);
+        ctx.lineTo(p.x, p.baseY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
       });
 
-      // Hearts inside
+      // 4) Snow caps on each peak
+      peaks.forEach((p) => {
+        buildSnowCap(ctx, p);
+        ctx.fillStyle = snow;
+        ctx.fill();
+        // small shadow under snow
+        ctx.save();
+        buildSnowCap(ctx, p);
+        ctx.clip();
+        ctx.fillStyle = snowShadow;
+        ctx.beginPath();
+        ctx.ellipse(p.x + p.w * 0.05, p.y + p.w * 0.35, p.w * 0.18, p.w * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 5) Pine forest at the base
+      const baseY = bl.y - 22;
+      const triBaseW = br.x - bl.x;
+      const treeCount = Math.floor(triBaseW / 16);
+      ctx.fillStyle = "#2a3320";
+      for (let i = 0; i < treeCount; i++) {
+        const t = (i + 0.5) / treeCount;
+        const x = bl.x + 24 + t * (triBaseW - 48);
+        const h = 14 + ((i * 53) % 8);
+        drawTree(ctx, x, baseY, h);
+      }
+
+      // 6) Hearts inside (drawn over peaks/forest, clipped to interior)
       heartBodiesRef.current.forEach(({ body, item }) => {
         const { x, y } = body.position;
         const angle = body.angle;
@@ -231,7 +285,7 @@ const SnapGuestbook = () => {
         ctx.translate(x, y);
         ctx.rotate(angle);
 
-        const size = 22;
+        const size = 18;
         if (item.imageUrl && imageCache.current.has(item.imageUrl)) {
           ctx.save();
           ctx.beginPath();
@@ -250,36 +304,46 @@ const SnapGuestbook = () => {
             drawH
           );
           ctx.restore();
-          // outline
           ctx.beginPath();
           drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.2;
           ctx.strokeStyle = "rgba(255,255,255,0.85)";
           ctx.stroke();
         } else {
           ctx.beginPath();
           drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
-          ctx.lineWidth = 1.6;
-          ctx.strokeStyle = "rgba(255,255,255,0.9)";
+          ctx.fillStyle = "#c9a878";
+          ctx.fill();
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = "rgba(60,40,20,0.6)";
           ctx.stroke();
           if (item.name) {
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "600 7px 'Noto Sans KR', sans-serif";
+            ctx.fillStyle = "#3a2818";
+            ctx.font = "600 6px 'Noto Sans KR', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(item.name, 0, 4);
+            ctx.fillText(item.name.slice(0, 4), 0, 3);
           }
         }
         ctx.restore();
       });
 
-      ctx.restore(); // end clip
+      ctx.restore(); // end interior clip
 
-      // Crisp outer outline on top
-      buildMountainPath(ctx, apex, bl, br, 7);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "#4a3520";
+      // 7) Couple name + date inside the frame (top area)
+      ctx.fillStyle = "#e8dcc4";
+      ctx.textAlign = "center";
+      ctx.font = "600 18px 'Gowun Batang', serif";
+      ctx.fillText("최준호 & 이수연", apex.x, apex.y + (bl.y - apex.y) * 0.36);
+      ctx.font = "500 13px 'Gowun Batang', serif";
+      ctx.fillStyle = "#cfc1a4";
+      ctx.fillText("2026년 6월 6일", apex.x, apex.y + (bl.y - apex.y) * 0.44);
+
+      // 8) Outer frame outline
+      buildTrianglePath(ctx, apex, bl, br, 0);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#3a2515";
       ctx.stroke();
 
       animFrame = requestAnimationFrame(draw);
