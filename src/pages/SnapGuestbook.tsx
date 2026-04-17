@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Matter from "matter-js";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, Heart } from "lucide-react";
+import { ArrowLeft, X, Plus } from "lucide-react";
 
 interface HeartItem {
   id: number;
   name: string;
   imageUrl: string;
+  imgX: number; // 0-1 within heart
+  imgY: number;
+  imgScale: number;
 }
 
 const MAX_HEARTS = 30;
+const MAX_GALLERY = 30;
 
 const SnapGuestbook = () => {
   const engineRef = useRef<Matter.Engine | null>(null);
@@ -18,8 +22,12 @@ const SnapGuestbook = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hearts, setHearts] = useState<HeartItem[]>([]);
   const [name, setName] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [heroUrl, setHeroUrl] = useState<string>("");
+  const [showAdjust, setShowAdjust] = useState(false);
+  // Hero adjustment transform (relative to heart center, normalized -1..1 ish; scale multiplier)
+  const [heroOffset, setHeroOffset] = useState({ x: 0, y: 0, scale: 1.2 });
   const navigate = useNavigate();
   const heartBodiesRef = useRef<Map<number, { body: Matter.Body; item: HeartItem }>>(new Map());
   const nextIdRef = useRef(1);
@@ -27,24 +35,29 @@ const SnapGuestbook = () => {
 
   const getLayout = useCallback(() => {
     const w = Math.min(window.innerWidth, 480);
-    const padding = 20;
+    const padding = 24;
     const triW = w - padding * 2;
-    const triH = triW * 1.05;
-    const topY = 50;
+    const triH = triW * 0.95;
+    const topY = 70; // leave room for peaks above
     const apex = { x: w / 2, y: topY };
     const bl = { x: padding, y: topY + triH };
     const br = { x: w - padding, y: topY + triH };
     return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 30 };
   }, []);
 
-  // Setup Matter.js engine + walls
+  // Setup Matter.js engine + walls — walls inset slightly so hearts sit inside the visible triangle
   useEffect(() => {
     const { apex, bl, br } = getLayout();
 
-    const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.8 } });
+    const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.9 } });
     engineRef.current = engine;
 
-    const wallThick = 18;
+    // Inset apex downward and corners inward so hearts settle inside the dark interior
+    const insetApex = { x: apex.x, y: apex.y + 30 };
+    const insetBL = { x: bl.x + 14, y: bl.y - 8 };
+    const insetBR = { x: br.x - 14, y: br.y - 8 };
+
+    const wallThick = 24;
     const makeWall = (p1: {x:number;y:number}, p2: {x:number;y:number}) => {
       const cx = (p1.x + p2.x) / 2;
       const cy = (p1.y + p2.y) / 2;
@@ -53,15 +66,16 @@ const SnapGuestbook = () => {
       const len = Math.sqrt(dx*dx + dy*dy);
       const angle = Math.atan2(dy, dx);
       return Matter.Bodies.rectangle(cx, cy, len + wallThick, wallThick, {
-        isStatic: true, angle, render: { visible: false },
+        isStatic: true, angle, friction: 0.4, render: { visible: false },
       });
     };
 
-    const leftWall = makeWall(apex, bl);
-    const rightWall = makeWall(apex, br);
+    const leftWall = makeWall(insetApex, insetBL);
+    const rightWall = makeWall(insetApex, insetBR);
     const bottom = Matter.Bodies.rectangle(
-      (bl.x + br.x) / 2, bl.y, br.x - bl.x + wallThick, wallThick,
-      { isStatic: true, render: { visible: false } }
+      (insetBL.x + insetBR.x) / 2, insetBL.y + wallThick / 2,
+      insetBR.x - insetBL.x + wallThick * 2, wallThick,
+      { isStatic: true, friction: 0.5, render: { visible: false } }
     );
     Matter.Composite.add(engine.world, [leftWall, rightWall, bottom]);
 
@@ -78,42 +92,84 @@ const SnapGuestbook = () => {
   const drawHeartPath = (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => {
     const s = size;
     const topY = cy - s * 0.4;
-    ctx.moveTo(cx, cy + s * 0.5);
-    ctx.bezierCurveTo(cx - s, cy - s * 0.1, cx - s * 0.6, topY - s * 0.3, cx, topY + s * 0.1);
-    ctx.bezierCurveTo(cx + s * 0.6, topY - s * 0.3, cx + s, cy - s * 0.1, cx, cy + s * 0.5);
+    ctx.moveTo(cx, cy + s * 0.55);
+    ctx.bezierCurveTo(cx - s * 1.05, cy - s * 0.05, cx - s * 0.55, topY - s * 0.35, cx, topY + s * 0.15);
+    ctx.bezierCurveTo(cx + s * 0.55, topY - s * 0.35, cx + s * 1.05, cy - s * 0.05, cx, cy + s * 0.55);
   };
 
-  const drawTreePath = (ctx: CanvasRenderingContext2D, x: number, baseY: number, h: number) => {
-    // Pine tree silhouette (triangular layers)
-    const w = h * 0.55;
+  // Refined mountain silhouette path - smooth, sophisticated
+  const buildMountainPath = (
+    ctx: CanvasRenderingContext2D,
+    apex: {x:number;y:number},
+    bl: {x:number;y:number},
+    br: {x:number;y:number},
+    inset: number,
+  ) => {
+    // Three peaks above the apex line — soft, asymmetric, refined
+    const baseY = apex.y + 8; // ridge baseline where peaks emerge
+    const p1 = { x: apex.x - 62, h: 44 };
+    const p2 = { x: apex.x + 4,  h: 72 }; // tallest, slightly off-center
+    const p3 = { x: apex.x + 64, h: 50 };
+
+    ctx.beginPath();
+    // Start bottom-left
+    ctx.moveTo(bl.x - inset, bl.y + inset);
+    // Smooth diagonal to start of left peak base
+    ctx.quadraticCurveTo(
+      (bl.x + p1.x) / 2 - 6, (bl.y + baseY) / 2,
+      p1.x - 30, baseY
+    );
+    // Up to peak 1
+    ctx.lineTo(p1.x, baseY - p1.h);
+    // Down into valley
+    ctx.lineTo(p1.x + 18, baseY - 6);
+    // Up to peak 2 (tallest)
+    ctx.lineTo(p2.x, baseY - p2.h);
+    // Valley
+    ctx.lineTo(p2.x + 24, baseY - 4);
+    // Up to peak 3
+    ctx.lineTo(p3.x, baseY - p3.h);
+    // Slope down
+    ctx.lineTo(p3.x + 28, baseY);
+    // Smooth diagonal to bottom-right
+    ctx.quadraticCurveTo(
+      (br.x + p3.x) / 2 + 6, (br.y + baseY) / 2,
+      br.x + inset, br.y + inset
+    );
+    ctx.closePath();
+  };
+
+  const drawTree = (ctx: CanvasRenderingContext2D, x: number, baseY: number, h: number) => {
+    const w = h * 0.45;
     ctx.beginPath();
     ctx.moveTo(x, baseY - h);
-    ctx.lineTo(x - w / 2, baseY - h * 0.55);
-    ctx.lineTo(x - w / 4, baseY - h * 0.55);
-    ctx.lineTo(x - w / 1.6, baseY - h * 0.15);
-    ctx.lineTo(x - w / 3.5, baseY - h * 0.15);
+    ctx.lineTo(x - w / 2, baseY - h * 0.6);
+    ctx.lineTo(x - w / 4, baseY - h * 0.6);
+    ctx.lineTo(x - w / 1.7, baseY - h * 0.25);
+    ctx.lineTo(x - w / 3.5, baseY - h * 0.25);
     ctx.lineTo(x - w / 2.2, baseY);
     ctx.lineTo(x + w / 2.2, baseY);
-    ctx.lineTo(x + w / 3.5, baseY - h * 0.15);
-    ctx.lineTo(x + w / 1.6, baseY - h * 0.15);
-    ctx.lineTo(x + w / 4, baseY - h * 0.55);
-    ctx.lineTo(x + w / 2, baseY - h * 0.55);
+    ctx.lineTo(x + w / 3.5, baseY - h * 0.25);
+    ctx.lineTo(x + w / 1.7, baseY - h * 0.25);
+    ctx.lineTo(x + w / 4, baseY - h * 0.6);
+    ctx.lineTo(x + w / 2, baseY - h * 0.6);
     ctx.closePath();
     ctx.fill();
   };
 
-  // Custom render loop
+  // Render loop
   useEffect(() => {
     let animFrame: number;
-    // Pre-compute fixed tree positions so they don't jitter
-    const { w: lw, bl: lbl, br: lbr } = getLayout();
+    const { bl: lbl, br: lbr } = getLayout();
     const trees: { x: number; h: number }[] = [];
     const triBaseW = lbr.x - lbl.x;
-    const treeCount = Math.floor(triBaseW / 18);
+    const treeCount = Math.floor(triBaseW / 14);
     for (let i = 0; i < treeCount; i++) {
       const t = (i + 0.5) / treeCount;
-      const x = lbl.x + t * triBaseW;
-      const h = 26 + ((i * 37) % 18);
+      const x = lbl.x + 18 + t * (triBaseW - 36);
+      // Height tapers near the triangle edges
+      const edgeFactor = Math.min(t, 1 - t) * 2; // 0..1
+      const h = (22 + ((i * 53) % 16)) * (0.55 + 0.45 * edgeFactor);
       trees.push({ x, h });
     }
 
@@ -132,72 +188,42 @@ const SnapGuestbook = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, canvasH);
 
-      // Frame wood color
-      const woodColor = "#8B6F4E";
-      const woodDark = "#6B4F2E";
-      const interior = "#3a322b";
+      const woodOuter = "#7B5A3A";
+      const woodInner = "#5A3F25";
+      const interior = "#2E2A22";
+      const interiorTop = "#3A352B";
 
-      // === Build top mountain peak path (3 small peaks) ===
-      // Peaks above the apex line of the triangle
-      const peakOffsets = [
-        { x: apex.x - 55, h: 38 },
-        { x: apex.x, h: 55 },
-        { x: apex.x + 55, h: 42 },
-      ];
-
-      // Helper to build outer silhouette (peaks + triangle sides)
-      const buildOuterPath = (inset: number) => {
-        ctx.beginPath();
-        // Start bottom-left
-        ctx.moveTo(bl.x - inset, bl.y + inset);
-        // Up the left side to apex area
-        ctx.lineTo(apex.x - 75, apex.y + 10);
-        // Up to first peak base (left)
-        ctx.lineTo(peakOffsets[0].x - 22, apex.y + 5);
-        ctx.lineTo(peakOffsets[0].x, apex.y - peakOffsets[0].h - inset);
-        // Down to valley
-        ctx.lineTo(peakOffsets[0].x + 18, apex.y - 5);
-        // Up to middle peak
-        ctx.lineTo(peakOffsets[1].x, apex.y - peakOffsets[1].h - inset);
-        // Down to next valley
-        ctx.lineTo(peakOffsets[1].x + 22, apex.y - 5);
-        // Up to right peak
-        ctx.lineTo(peakOffsets[2].x, apex.y - peakOffsets[2].h - inset);
-        // Down to right side
-        ctx.lineTo(peakOffsets[2].x + 22, apex.y + 5);
-        ctx.lineTo(apex.x + 75, apex.y + 10);
-        ctx.lineTo(br.x + inset, br.y + inset);
-        ctx.closePath();
-      };
-
-      // Outer wood frame (filled brown)
-      ctx.fillStyle = woodColor;
-      buildOuterPath(8);
+      // Outer wood frame (thick)
+      buildMountainPath(ctx, apex, bl, br, 7);
+      ctx.fillStyle = woodOuter;
       ctx.fill();
 
-      // Inner triangle area (dark interior)
+      // Inner edge (subtle inner shadow line)
+      buildMountainPath(ctx, apex, bl, br, 0);
+      ctx.fillStyle = woodInner;
+      ctx.fill();
+
+      // Interior with subtle gradient
       ctx.save();
-      ctx.fillStyle = interior;
-      buildOuterPath(-2);
-      ctx.fill();
-
-      // Clip interior for hearts + trees
-      ctx.beginPath();
-      buildOuterPath(-2);
+      buildMountainPath(ctx, apex, bl, br, -3);
       ctx.clip();
 
-      // Draw pine trees at the bottom
-      ctx.fillStyle = "#3d4a32";
-      trees.forEach(({ x, h }) => {
-        drawTreePath(ctx, x, bl.y - 2, h);
-      });
-      // Second darker layer in front
-      ctx.fillStyle = "#2a3422";
+      const grad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
+      grad.addColorStop(0, interiorTop);
+      grad.addColorStop(1, interior);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, canvasH);
+
+      // Pine forest at the base — two layers for depth
+      ctx.fillStyle = "#39443018";
+      ctx.fillStyle = "#3D4A33";
+      trees.forEach(({ x, h }) => drawTree(ctx, x, bl.y - 4, h));
+      ctx.fillStyle = "#283322";
       trees.forEach(({ x, h }, i) => {
-        if (i % 2 === 0) drawTreePath(ctx, x + 6, bl.y - 2, h * 0.85);
+        if (i % 2 === 0) drawTree(ctx, x + 5, bl.y - 4, h * 0.85);
       });
 
-      // Draw hearts inside
+      // Hearts inside
       heartBodiesRef.current.forEach(({ body, item }) => {
         const { x, y } = body.position;
         const angle = body.angle;
@@ -205,29 +231,38 @@ const SnapGuestbook = () => {
         ctx.translate(x, y);
         ctx.rotate(angle);
 
-        // Heart outline (white) like sketch
+        const size = 22;
         if (item.imageUrl && imageCache.current.has(item.imageUrl)) {
           ctx.save();
           ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, 22);
+          drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
           ctx.clip();
           const img = imageCache.current.get(item.imageUrl)!;
-          ctx.drawImage(img, -22, -22, 44, 44);
+          const baseSize = size * 2.2;
+          const drawW = baseSize * item.imgScale;
+          const drawH = baseSize * item.imgScale * (img.height / img.width);
+          ctx.drawImage(
+            img,
+            -drawW / 2 + item.imgX * size,
+            -drawH / 2 + item.imgY * size,
+            drawW,
+            drawH
+          );
           ctx.restore();
           // outline
           ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, 22);
+          drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
-          ctx.lineWidth = 1.5;
-          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = "rgba(255,255,255,0.85)";
           ctx.stroke();
         } else {
           ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, 22);
+          drawHeartPath(ctx, 0, 0, size);
           ctx.closePath();
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = "rgba(255,255,255,0.9)";
           ctx.stroke();
           if (item.name) {
             ctx.fillStyle = "#ffffff";
@@ -241,10 +276,10 @@ const SnapGuestbook = () => {
 
       ctx.restore(); // end clip
 
-      // Wood frame outline (brown stroke on top of everything for clean edge)
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = woodDark;
-      buildOuterPath(8);
+      // Crisp outer outline on top
+      buildMountainPath(ctx, apex, bl, br, 7);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#4a3520";
       ctx.stroke();
 
       animFrame = requestAnimationFrame(draw);
@@ -254,21 +289,20 @@ const SnapGuestbook = () => {
     return () => cancelAnimationFrame(animFrame);
   }, [getLayout]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const dropHeart = useCallback((heartName: string, heartImage: string) => {
+  const dropHeart = useCallback((heartName: string, heartImage: string, offset: {x:number;y:number;scale:number}) => {
     if (!engineRef.current) return;
     if (heartBodiesRef.current.size >= MAX_HEARTS) return;
 
     const { w, topY } = getLayout();
     const id = nextIdRef.current++;
-    const item: HeartItem = { id, name: heartName || "익명", imageUrl: heartImage || "" };
+    const item: HeartItem = {
+      id,
+      name: heartName || "익명",
+      imageUrl: heartImage || "",
+      imgX: offset.x,
+      imgY: offset.y,
+      imgScale: offset.scale,
+    };
 
     if (heartImage) {
       const img = new Image();
@@ -277,10 +311,11 @@ const SnapGuestbook = () => {
     }
 
     const radius = 20;
-    const x = w / 2 + (Math.random() - 0.5) * 60;
-    const body = Matter.Bodies.circle(x, topY + 30, radius, {
-      restitution: 0.3,
-      friction: 0.5,
+    // Spawn well inside the triangle (just below the apex)
+    const x = w / 2 + (Math.random() - 0.5) * 30;
+    const body = Matter.Bodies.circle(x, topY + 70, radius, {
+      restitution: 0.25,
+      friction: 0.6,
       density: 0.003,
       render: { visible: false },
     });
@@ -290,19 +325,64 @@ const SnapGuestbook = () => {
     setHearts((prev) => [...prev, item]);
   }, [getLayout]);
 
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const room = MAX_GALLERY - galleryFiles.length;
+    const accepted = files.slice(0, room);
+    const newUrls = accepted.map((f) => URL.createObjectURL(f));
+    setGalleryFiles((prev) => [...prev, ...accepted]);
+    setGalleryUrls((prev) => [...prev, ...newUrls]);
+    e.target.value = "";
+  };
+
+  const removeGalleryItem = (idx: number) => {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== idx));
+    setGalleryUrls((prev) => {
+      URL.revokeObjectURL(prev[idx]);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const handleHeroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (heroUrl) URL.revokeObjectURL(heroUrl);
+    const url = URL.createObjectURL(file);
+    setHeroUrl(url);
+    setHeroOffset({ x: 0, y: 0, scale: 1.2 });
+    setShowAdjust(true);
+    e.target.value = "";
+  };
+
   const handleUpload = () => {
     if (hearts.length >= MAX_HEARTS) return;
-    dropHeart(name, previewUrl);
+    dropHeart(name, heroUrl, heroOffset);
     setName("");
-    setSelectedFile(null);
-    setPreviewUrl("");
+    setHeroUrl("");
+    setHeroOffset({ x: 0, y: 0, scale: 1.2 });
+    setGalleryFiles([]);
+    setGalleryUrls((prev) => { prev.forEach(URL.revokeObjectURL); return []; });
   };
+
+  // Hero drag in adjust modal
+  const heroDragRef = useRef<{ startX: number; startY: number; offX: number; offY: number } | null>(null);
+  const onHeroPointerDown = (e: React.PointerEvent) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    heroDragRef.current = { startX: e.clientX, startY: e.clientY, offX: heroOffset.x, offY: heroOffset.y };
+  };
+  const onHeroPointerMove = (e: React.PointerEvent) => {
+    if (!heroDragRef.current) return;
+    const dx = (e.clientX - heroDragRef.current.startX) / 40; // tune sensitivity
+    const dy = (e.clientY - heroDragRef.current.startY) / 40;
+    setHeroOffset((o) => ({ ...o, x: heroDragRef.current!.offX + dx, y: heroDragRef.current!.offY + dy }));
+  };
+  const onHeroPointerUp = () => { heroDragRef.current = null; };
 
   const { w, canvasH } = getLayout();
 
   return (
     <div className="min-h-screen bg-white flex justify-center">
-      <div className="w-full max-w-[480px] min-h-screen relative pb-12">
+      <div className="w-full max-w-[480px] min-h-screen relative pb-16">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
           <button onClick={() => navigate("/")} className="text-olive-dark p-2">
@@ -314,10 +394,7 @@ const SnapGuestbook = () => {
 
         {/* Mountain canvas */}
         <div ref={containerRef} className="relative mx-auto" style={{ width: w, height: canvasH }}>
-          <canvas
-            ref={canvasRef}
-            style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH }}
-          />
+          <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH }} />
         </div>
 
         {/* Names and date */}
@@ -328,7 +405,7 @@ const SnapGuestbook = () => {
 
         {/* Form */}
         <div className="px-6 pt-4 space-y-5">
-          {/* Name input */}
+          {/* Name */}
           <div className="flex items-center gap-3">
             <label className="font-serif text-olive-dark text-base shrink-0">이름</label>
             <input
@@ -339,64 +416,170 @@ const SnapGuestbook = () => {
             />
           </div>
 
-          {/* Photo + Heart row */}
+          {/* Photos/Videos + Hero */}
           <div className="flex items-start gap-4">
-            {/* Photo upload */}
+            {/* Gallery upload (max 30) */}
             <div className="flex-1">
               <p className="text-olive-dark/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
               <label className="flex items-center justify-center w-full h-14 border-2 border-olive-dark/70 rounded-md cursor-pointer hover:bg-olive-light/10 transition-colors">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="" className="h-12 w-12 object-cover rounded" />
-                ) : (
-                  <span className="text-olive-dark text-sm">+ 추가하기</span>
-                )}
-                <input type="file" accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
+                <span className="text-olive-dark text-sm">+ 추가하기</span>
+                <input type="file" accept="image/*,video/*" multiple onChange={handleGalleryChange} className="hidden" />
               </label>
-              <p className="text-olive-dark/60 text-xs mt-1 text-center">최대 30장</p>
+              <p className="text-olive-dark/60 text-xs mt-1 text-center">
+                {galleryFiles.length} / {MAX_GALLERY}장
+              </p>
+              {galleryUrls.length > 0 && (
+                <div className="grid grid-cols-4 gap-1.5 mt-2">
+                  {galleryUrls.map((url, i) => (
+                    <div key={i} className="relative aspect-square rounded overflow-hidden">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeGalleryItem(i)}
+                        className="absolute top-0.5 right-0.5 bg-black/60 rounded-full p-0.5"
+                        aria-label="remove"
+                      >
+                        <X size={10} className="text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Heart representative */}
+            {/* Hero (single) */}
             <div className="w-24">
               <p className="text-olive-dark/80 text-xs mb-1.5 text-center">대표사진추가</p>
-              <label className="relative flex items-center justify-center cursor-pointer w-24 h-24">
-                <Heart
-                  size={92}
-                  strokeWidth={2}
-                  className="absolute inset-0 m-auto text-olive-dark"
-                  fill={previewUrl ? "transparent" : "transparent"}
-                />
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt=""
-                    className="absolute w-14 h-14 object-cover"
-                    style={{
-                      clipPath: "path('M28 50 C 5 30, 12 8, 28 18 C 44 8, 51 30, 28 50 Z')",
-                    }}
+              <label className="relative flex items-center justify-center cursor-pointer w-24 h-24 group">
+                {/* Heart shape via SVG */}
+                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+                  <defs>
+                    <clipPath id="heartClip">
+                      <path d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z" />
+                    </clipPath>
+                  </defs>
+                  {heroUrl && (
+                    <image
+                      href={heroUrl}
+                      x={50 - 40 * heroOffset.scale + heroOffset.x * 4}
+                      y={50 - 40 * heroOffset.scale + heroOffset.y * 4}
+                      width={80 * heroOffset.scale}
+                      height={80 * heroOffset.scale}
+                      preserveAspectRatio="xMidYMid slice"
+                      clipPath="url(#heartClip)"
+                    />
+                  )}
+                  <path
+                    d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z"
+                    fill="none"
+                    stroke="hsl(var(--olive-dark, 70 12% 25%))"
+                    strokeWidth="2.5"
+                    style={{ stroke: "#474A37" }}
                   />
-                ) : (
-                  <span className="relative text-olive-dark text-xs font-medium">+ 추가하기</span>
+                </svg>
+                {!heroUrl && (
+                  <span className="relative text-olive-dark text-xs font-medium pointer-events-none">+ 추가하기</span>
                 )}
-                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                <input type="file" accept="image/*" onChange={handleHeroChange} className="hidden" />
               </label>
+              {heroUrl && (
+                <button
+                  onClick={() => setShowAdjust(true)}
+                  className="block mx-auto mt-1 text-[10px] text-olive-dark/70 underline"
+                >
+                  사진 조정
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Upload button */}
-          <div className="flex justify-center pt-4">
+          {/* Upload */}
+          <div className="flex justify-center pt-3">
             <button
               onClick={handleUpload}
               disabled={hearts.length >= MAX_HEARTS}
-              className="px-8 py-2 border-2 border-olive-dark rounded-md text-olive-dark font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
+              className="px-10 py-2 border-2 border-olive-dark rounded-md text-olive-dark font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
             >
               올리기
             </button>
           </div>
 
           <p className="text-center text-olive-dark/50 text-xs">
-            {hearts.length} / {MAX_HEARTS}
+            하트 {hearts.length} / {MAX_HEARTS}
           </p>
         </div>
+
+        {/* Hero adjust modal */}
+        {showAdjust && heroUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
+            <div className="w-full max-w-[360px] bg-white rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-olive-dark text-base">하트 안에 사진 맞추기</h3>
+                <button onClick={() => setShowAdjust(false)} className="text-olive-dark"><X size={20} /></button>
+              </div>
+
+              {/* Drag area */}
+              <div
+                onPointerDown={onHeroPointerDown}
+                onPointerMove={onHeroPointerMove}
+                onPointerUp={onHeroPointerUp}
+                onPointerCancel={onHeroPointerUp}
+                className="relative mx-auto w-64 h-64 touch-none select-none cursor-grab active:cursor-grabbing"
+              >
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <defs>
+                    <clipPath id="heartClipBig">
+                      <path d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z" />
+                    </clipPath>
+                  </defs>
+                  <image
+                    href={heroUrl}
+                    x={50 - 40 * heroOffset.scale + heroOffset.x * 4}
+                    y={50 - 40 * heroOffset.scale + heroOffset.y * 4}
+                    width={80 * heroOffset.scale}
+                    height={80 * heroOffset.scale}
+                    preserveAspectRatio="xMidYMid slice"
+                    clipPath="url(#heartClipBig)"
+                  />
+                  <path
+                    d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z"
+                    fill="none"
+                    stroke="#474A37"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              </div>
+
+              {/* Zoom slider */}
+              <div className="space-y-1">
+                <label className="text-xs text-olive-dark/70">확대 / 축소</label>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={3}
+                  step={0.05}
+                  value={heroOffset.scale}
+                  onChange={(e) => setHeroOffset((o) => ({ ...o, scale: parseFloat(e.target.value) }))}
+                  className="w-full accent-olive-dark"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setHeroOffset({ x: 0, y: 0, scale: 1.2 })}
+                  className="flex-1 py-2 border border-olive-dark/40 rounded-md text-olive-dark text-sm"
+                >
+                  초기화
+                </button>
+                <button
+                  onClick={() => setShowAdjust(false)}
+                  className="flex-1 py-2 bg-olive-dark text-white rounded-md text-sm"
+                >
+                  완료
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
