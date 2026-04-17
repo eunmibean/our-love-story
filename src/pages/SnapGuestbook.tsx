@@ -35,10 +35,10 @@ const SnapGuestbook = () => {
 
   const getLayout = useCallback(() => {
     const w = Math.min(window.innerWidth, 480);
-    const padding = 24;
+    const padding = 16;
     const triW = w - padding * 2;
-    const triH = triW * 0.95;
-    const topY = 70; // leave room for peaks above
+    const triH = triW * 0.88;
+    const topY = 24;
     const apex = { x: w / 2, y: topY };
     const bl = { x: padding, y: topY + triH };
     const br = { x: w - padding, y: topY + triH };
