@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Matter from "matter-js";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, X, Heart } from "lucide-react";
 
 interface HeartItem {
   id: number;
@@ -17,7 +17,6 @@ const SnapGuestbook = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hearts, setHearts] = useState<HeartItem[]>([]);
-  const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -29,24 +28,22 @@ const SnapGuestbook = () => {
   const getLayout = useCallback(() => {
     const w = Math.min(window.innerWidth, 480);
     const padding = 20;
-    // Main big triangle
     const triW = w - padding * 2;
-    const triH = triW * 1.2;
-    const topY = 40;
+    const triH = triW * 1.05;
+    const topY = 50;
     const apex = { x: w / 2, y: topY };
     const bl = { x: padding, y: topY + triH };
     const br = { x: w - padding, y: topY + triH };
-    return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 20 };
+    return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 30 };
   }, []);
 
   // Setup Matter.js engine + walls
   useEffect(() => {
-    const { w, canvasH, apex, bl, br } = getLayout();
+    const { apex, bl, br } = getLayout();
 
     const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.8 } });
     engineRef.current = engine;
 
-    // Triangle walls (static)
     const wallThick = 18;
     const makeWall = (p1: {x:number;y:number}, p2: {x:number;y:number}) => {
       const cx = (p1.x + p2.x) / 2;
@@ -78,9 +75,48 @@ const SnapGuestbook = () => {
     };
   }, [getLayout]);
 
+  const drawHeartPath = (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => {
+    const s = size;
+    const topY = cy - s * 0.4;
+    ctx.moveTo(cx, cy + s * 0.5);
+    ctx.bezierCurveTo(cx - s, cy - s * 0.1, cx - s * 0.6, topY - s * 0.3, cx, topY + s * 0.1);
+    ctx.bezierCurveTo(cx + s * 0.6, topY - s * 0.3, cx + s, cy - s * 0.1, cx, cy + s * 0.5);
+  };
+
+  const drawTreePath = (ctx: CanvasRenderingContext2D, x: number, baseY: number, h: number) => {
+    // Pine tree silhouette (triangular layers)
+    const w = h * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY - h);
+    ctx.lineTo(x - w / 2, baseY - h * 0.55);
+    ctx.lineTo(x - w / 4, baseY - h * 0.55);
+    ctx.lineTo(x - w / 1.6, baseY - h * 0.15);
+    ctx.lineTo(x - w / 3.5, baseY - h * 0.15);
+    ctx.lineTo(x - w / 2.2, baseY);
+    ctx.lineTo(x + w / 2.2, baseY);
+    ctx.lineTo(x + w / 3.5, baseY - h * 0.15);
+    ctx.lineTo(x + w / 1.6, baseY - h * 0.15);
+    ctx.lineTo(x + w / 4, baseY - h * 0.55);
+    ctx.lineTo(x + w / 2, baseY - h * 0.55);
+    ctx.closePath();
+    ctx.fill();
+  };
+
   // Custom render loop
   useEffect(() => {
     let animFrame: number;
+    // Pre-compute fixed tree positions so they don't jitter
+    const { w: lw, bl: lbl, br: lbr } = getLayout();
+    const trees: { x: number; h: number }[] = [];
+    const triBaseW = lbr.x - lbl.x;
+    const treeCount = Math.floor(triBaseW / 18);
+    for (let i = 0; i < treeCount; i++) {
+      const t = (i + 0.5) / treeCount;
+      const x = lbl.x + t * triBaseW;
+      const h = 26 + ((i * 37) % 18);
+      trees.push({ x, h });
+    }
+
     const draw = () => {
       const canvas = canvasRef.current;
       if (!canvas) { animFrame = requestAnimationFrame(draw); return; }
@@ -93,88 +129,75 @@ const SnapGuestbook = () => {
       canvas.height = canvasH * dpr;
       canvas.style.width = `${w}px`;
       canvas.style.height = `${canvasH}px`;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, canvasH);
 
-      // === Draw mountain scene inside triangle (clipped) ===
+      // Frame wood color
+      const woodColor = "#8B6F4E";
+      const woodDark = "#6B4F2E";
+      const interior = "#3a322b";
+
+      // === Build top mountain peak path (3 small peaks) ===
+      // Peaks above the apex line of the triangle
+      const peakOffsets = [
+        { x: apex.x - 55, h: 38 },
+        { x: apex.x, h: 55 },
+        { x: apex.x + 55, h: 42 },
+      ];
+
+      // Helper to build outer silhouette (peaks + triangle sides)
+      const buildOuterPath = (inset: number) => {
+        ctx.beginPath();
+        // Start bottom-left
+        ctx.moveTo(bl.x - inset, bl.y + inset);
+        // Up the left side to apex area
+        ctx.lineTo(apex.x - 75, apex.y + 10);
+        // Up to first peak base (left)
+        ctx.lineTo(peakOffsets[0].x - 22, apex.y + 5);
+        ctx.lineTo(peakOffsets[0].x, apex.y - peakOffsets[0].h - inset);
+        // Down to valley
+        ctx.lineTo(peakOffsets[0].x + 18, apex.y - 5);
+        // Up to middle peak
+        ctx.lineTo(peakOffsets[1].x, apex.y - peakOffsets[1].h - inset);
+        // Down to next valley
+        ctx.lineTo(peakOffsets[1].x + 22, apex.y - 5);
+        // Up to right peak
+        ctx.lineTo(peakOffsets[2].x, apex.y - peakOffsets[2].h - inset);
+        // Down to right side
+        ctx.lineTo(peakOffsets[2].x + 22, apex.y + 5);
+        ctx.lineTo(apex.x + 75, apex.y + 10);
+        ctx.lineTo(br.x + inset, br.y + inset);
+        ctx.closePath();
+      };
+
+      // Outer wood frame (filled brown)
+      ctx.fillStyle = woodColor;
+      buildOuterPath(8);
+      ctx.fill();
+
+      // Inner triangle area (dark interior)
       ctx.save();
+      ctx.fillStyle = interior;
+      buildOuterPath(-2);
+      ctx.fill();
+
+      // Clip interior for hearts + trees
       ctx.beginPath();
-      ctx.moveTo(apex.x, apex.y + 6);
-      ctx.lineTo(bl.x + 4, bl.y - 4);
-      ctx.lineTo(br.x - 4, br.y - 4);
-      ctx.closePath();
+      buildOuterPath(-2);
       ctx.clip();
 
-      // Dark background inside
-      ctx.fillStyle = "#2a2d22";
-      ctx.fillRect(0, 0, w, canvasH);
-
-      // Mountain layers (back to front)
-      // Far mountains - dark grey
-      ctx.fillStyle = "#4a4d40";
-      ctx.beginPath();
-      ctx.moveTo(bl.x, bl.y - 120);
-      ctx.lineTo(bl.x + 60, bl.y - 200);
-      ctx.lineTo(bl.x + 100, bl.y - 170);
-      ctx.lineTo(w / 2 - 40, bl.y - 250);
-      ctx.lineTo(w / 2, bl.y - 220);
-      ctx.lineTo(w / 2 + 50, bl.y - 260);
-      ctx.lineTo(br.x - 80, bl.y - 180);
-      ctx.lineTo(br.x - 30, bl.y - 210);
-      ctx.lineTo(br.x, bl.y - 130);
-      ctx.lineTo(br.x, bl.y);
-      ctx.lineTo(bl.x, bl.y);
-      ctx.closePath();
-      ctx.fill();
-
-      // Mid mountains - slightly lighter
-      ctx.fillStyle = "#3d4032";
-      ctx.beginPath();
-      ctx.moveTo(bl.x, bl.y - 80);
-      ctx.lineTo(bl.x + 80, bl.y - 160);
-      ctx.lineTo(bl.x + 130, bl.y - 120);
-      ctx.lineTo(w / 2, bl.y - 180);
-      ctx.lineTo(w / 2 + 60, bl.y - 140);
-      ctx.lineTo(br.x - 50, bl.y - 170);
-      ctx.lineTo(br.x, bl.y - 90);
-      ctx.lineTo(br.x, bl.y);
-      ctx.lineTo(bl.x, bl.y);
-      ctx.closePath();
-      ctx.fill();
-
-      // Snow caps
-      ctx.fillStyle = "#e8e8e0";
-      // Snow on far left peak
-      const snowPeaks = [
-        { px: bl.x + 60, py: bl.y - 200, sw: 18 },
-        { px: w / 2 - 40, py: bl.y - 250, sw: 22 },
-        { px: w / 2 + 50, py: bl.y - 260, sw: 20 },
-        { px: br.x - 30, py: bl.y - 210, sw: 16 },
-      ];
-      snowPeaks.forEach(({ px, py, sw }) => {
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px - sw, py + sw * 0.8);
-        ctx.lineTo(px + sw, py + sw * 0.8);
-        ctx.closePath();
-        ctx.fill();
+      // Draw pine trees at the bottom
+      ctx.fillStyle = "#3d4a32";
+      trees.forEach(({ x, h }) => {
+        drawTreePath(ctx, x, bl.y - 2, h);
+      });
+      // Second darker layer in front
+      ctx.fillStyle = "#2a3422";
+      trees.forEach(({ x, h }, i) => {
+        if (i % 2 === 0) drawTreePath(ctx, x + 6, bl.y - 2, h * 0.85);
       });
 
-      // Forest/trees at bottom
-      ctx.fillStyle = "#1e2118";
-      const treeBaseY = bl.y;
-      for (let tx = bl.x; tx < br.x; tx += 12) {
-        const treeH = 30 + Math.random() * 25;
-        ctx.beginPath();
-        ctx.moveTo(tx, treeBaseY);
-        ctx.lineTo(tx - 6, treeBaseY);
-        ctx.lineTo(tx - 1, treeBaseY - treeH);
-        ctx.lineTo(tx + 4, treeBaseY);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // Draw hearts inside the triangle
+      // Draw hearts inside
       heartBodiesRef.current.forEach(({ body, item }) => {
         const { x, y } = body.position;
         const angle = body.angle;
@@ -182,93 +205,47 @@ const SnapGuestbook = () => {
         ctx.translate(x, y);
         ctx.rotate(angle);
 
+        // Heart outline (white) like sketch
         if (item.imageUrl && imageCache.current.has(item.imageUrl)) {
-          // Heart clip with photo
+          ctx.save();
           ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, 20);
+          drawHeartPath(ctx, 0, 0, 22);
           ctx.closePath();
           ctx.clip();
           const img = imageCache.current.get(item.imageUrl)!;
-          ctx.drawImage(img, -20, -20, 40, 40);
-        } else {
-          // Solid lime heart
-          ctx.fillStyle = "#d8e592";
+          ctx.drawImage(img, -22, -22, 44, 44);
+          ctx.restore();
+          // outline
           ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, 20);
+          drawHeartPath(ctx, 0, 0, 22);
           ctx.closePath();
-          ctx.fill();
-          
-          // Name text
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "#ffffff";
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          drawHeartPath(ctx, 0, 0, 22);
+          ctx.closePath();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "#ffffff";
+          ctx.stroke();
           if (item.name) {
-            ctx.fillStyle = "#474a37";
-            ctx.font = "bold 7px 'Noto Sans KR', sans-serif";
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "600 7px 'Noto Sans KR', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(item.name, 0, 5);
+            ctx.fillText(item.name, 0, 4);
           }
         }
-
         ctx.restore();
       });
 
       ctx.restore(); // end clip
 
-      // === Draw wooden frame border ===
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = "#8B6914";
-      ctx.lineJoin = "miter";
-      ctx.beginPath();
-      ctx.moveTo(apex.x, apex.y);
-      ctx.lineTo(bl.x, bl.y);
-      ctx.lineTo(br.x, br.y);
-      ctx.closePath();
-      ctx.stroke();
-
-      // Outer highlight
+      // Wood frame outline (brown stroke on top of everything for clean edge)
       ctx.lineWidth = 3;
-      ctx.strokeStyle = "#A68B3C";
-      ctx.beginPath();
-      ctx.moveTo(apex.x, apex.y - 3);
-      ctx.lineTo(bl.x - 3, bl.y + 3);
-      ctx.lineTo(br.x + 3, br.y + 3);
-      ctx.closePath();
+      ctx.strokeStyle = woodDark;
+      buildOuterPath(8);
       ctx.stroke();
-
-      // Inner shadow
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "#6B4F10";
-      ctx.beginPath();
-      ctx.moveTo(apex.x, apex.y + 6);
-      ctx.lineTo(bl.x + 5, bl.y - 4);
-      ctx.lineTo(br.x - 5, br.y - 4);
-      ctx.closePath();
-      ctx.stroke();
-
-      // Multiple mountain peaks on top frame
-      const peakData = [
-        { x: apex.x - 50, h: 20 },
-        { x: apex.x, h: 30 },
-        { x: apex.x + 50, h: 22 },
-      ];
-      peakData.forEach(({ x: px, h }) => {
-        // Get Y on the frame at this X
-        const t = (px - apex.x) / (br.x - apex.x);
-        const baseY = apex.y + Math.abs(t) * (br.y - apex.y) * 0.15;
-        ctx.fillStyle = "#8B6914";
-        ctx.beginPath();
-        ctx.moveTo(px - 18, baseY);
-        ctx.lineTo(px, baseY - h);
-        ctx.lineTo(px + 18, baseY);
-        ctx.closePath();
-        ctx.fill();
-        // Snow cap
-        ctx.fillStyle = "#e8e8e0";
-        ctx.beginPath();
-        ctx.moveTo(px, baseY - h);
-        ctx.lineTo(px - 7, baseY - h + 8);
-        ctx.lineTo(px + 7, baseY - h + 8);
-        ctx.closePath();
-        ctx.fill();
-      });
 
       animFrame = requestAnimationFrame(draw);
     };
@@ -276,47 +253,6 @@ const SnapGuestbook = () => {
     animFrame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(animFrame);
   }, [getLayout]);
-
-  const drawHeartPath = (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => {
-    const s = size;
-    const topY = cy - s * 0.4;
-    ctx.moveTo(cx, cy + s * 0.5);
-    ctx.bezierCurveTo(cx - s, cy - s * 0.1, cx - s * 0.6, topY - s * 0.3, cx, topY + s * 0.1);
-    ctx.bezierCurveTo(cx + s * 0.6, topY - s * 0.3, cx + s, cy - s * 0.1, cx, cy + s * 0.5);
-  };
-
-  const addHeart = useCallback(() => {
-    if (!engineRef.current) return;
-    if (hearts.length >= MAX_HEARTS) return;
-
-    const { w, topY } = getLayout();
-    const id = nextIdRef.current++;
-    const item: HeartItem = { id, name: name || "익명", imageUrl: previewUrl || "" };
-
-    // Cache image
-    if (previewUrl) {
-      const img = new Image();
-      img.src = previewUrl;
-      img.onload = () => imageCache.current.set(previewUrl, img);
-    }
-
-    const radius = 18;
-    const x = w / 2 + (Math.random() - 0.5) * 80;
-    const body = Matter.Bodies.circle(x, topY - 10, radius, {
-      restitution: 0.3,
-      friction: 0.5,
-      density: 0.003,
-      render: { visible: false },
-    });
-
-    Matter.Composite.add(engineRef.current.world, body);
-    heartBodiesRef.current.set(id, { body, item });
-    setHearts((prev) => [...prev, item]);
-    setShowModal(false);
-    setName("");
-    setSelectedFile(null);
-    setPreviewUrl("");
-  }, [hearts.length, name, previewUrl, getLayout]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -326,43 +262,53 @@ const SnapGuestbook = () => {
     }
   };
 
-  // Add sample hearts
-  useEffect(() => {
+  const dropHeart = useCallback((heartName: string, heartImage: string) => {
     if (!engineRef.current) return;
-    const timeout = setTimeout(() => {
-      const samples = ["김민수", "이지은", "박준형", "최수연", "정하나", "홍길동", "강다연"];
-      const { w, topY } = getLayout();
-      samples.forEach((sampleName, i) => {
-        setTimeout(() => {
-          if (!engineRef.current) return;
-          const id = nextIdRef.current++;
-          const item: HeartItem = { id, name: sampleName, imageUrl: "" };
-          const radius = 18;
-          const x = w / 2 + (Math.random() - 0.5) * 60;
-          const body = Matter.Bodies.circle(x, topY - 10, radius, {
-            restitution: 0.3, friction: 0.5, density: 0.003,
-            render: { visible: false },
-          });
-          Matter.Composite.add(engineRef.current!.world, body);
-          heartBodiesRef.current.set(id, { body, item });
-          setHearts((prev) => [...prev, item]);
-        }, i * 350);
-      });
-    }, 500);
-    return () => clearTimeout(timeout);
+    if (heartBodiesRef.current.size >= MAX_HEARTS) return;
+
+    const { w, topY } = getLayout();
+    const id = nextIdRef.current++;
+    const item: HeartItem = { id, name: heartName || "익명", imageUrl: heartImage || "" };
+
+    if (heartImage) {
+      const img = new Image();
+      img.src = heartImage;
+      img.onload = () => imageCache.current.set(heartImage, img);
+    }
+
+    const radius = 20;
+    const x = w / 2 + (Math.random() - 0.5) * 60;
+    const body = Matter.Bodies.circle(x, topY + 30, radius, {
+      restitution: 0.3,
+      friction: 0.5,
+      density: 0.003,
+      render: { visible: false },
+    });
+
+    Matter.Composite.add(engineRef.current.world, body);
+    heartBodiesRef.current.set(id, { body, item });
+    setHearts((prev) => [...prev, item]);
   }, [getLayout]);
+
+  const handleUpload = () => {
+    if (hearts.length >= MAX_HEARTS) return;
+    dropHeart(name, previewUrl);
+    setName("");
+    setSelectedFile(null);
+    setPreviewUrl("");
+  };
 
   const { w, canvasH } = getLayout();
 
   return (
     <div className="min-h-screen bg-white flex justify-center">
-      <div className="w-full max-w-[480px] min-h-screen relative">
+      <div className="w-full max-w-[480px] min-h-screen relative pb-12">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => navigate("/")} className="text-[#d8e592] p-2">
+          <button onClick={() => navigate("/")} className="text-olive-dark p-2">
             <ArrowLeft size={24} />
           </button>
-          <h1 className="font-serif text-[#d8e592] text-lg">스냅 방명록</h1>
+          <h1 className="font-serif text-olive-dark text-lg">스냅 방명록</h1>
           <div className="w-10" />
         </div>
 
@@ -375,76 +321,82 @@ const SnapGuestbook = () => {
         </div>
 
         {/* Names and date */}
-        <div className="text-center py-4 space-y-1">
-          <p className="font-serif text-[#d8e592] text-lg tracking-wider">최준호 &amp; 이수연</p>
-          <p className="text-[#d8e592]/60 text-sm font-serif">2026년 6월 6일</p>
+        <div className="text-center py-3 space-y-1">
+          <p className="font-serif text-olive-dark text-base tracking-wider">최준호 &amp; 이수연</p>
+          <p className="text-olive-dark/60 text-sm font-serif">2026년 6월 6일</p>
         </div>
 
-        {/* Count + Add button */}
-        <div className="text-center pb-8 space-y-4">
-          <p className="text-[#d8e592]/50 text-xs">
-            {hearts.length} / {MAX_HEARTS} 하트
-          </p>
-          <button
-            onClick={() => hearts.length < MAX_HEARTS && setShowModal(true)}
-            disabled={hearts.length >= MAX_HEARTS}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#d8e592] text-[#474a37] rounded-full font-medium text-sm hover:bg-[#d8e592]/90 transition-colors disabled:opacity-50"
-          >
-            <Plus size={16} />
-            사진 올리기
-          </button>
-        </div>
+        {/* Form */}
+        <div className="px-6 pt-4 space-y-5">
+          {/* Name input */}
+          <div className="flex items-center gap-3">
+            <label className="font-serif text-olive-dark text-base shrink-0">이름</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="flex-1 border-2 border-olive-dark/70 rounded-md px-3 py-2 text-olive-dark text-sm focus:outline-none focus:border-olive-dark bg-transparent"
+            />
+          </div>
 
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
-            <div className="w-full max-w-[480px] bg-[#474a37] border-t border-[#d8e592]/20 rounded-t-2xl p-6 animate-slide-up">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-serif text-[#d8e592] text-lg">사진 올리기</h3>
-                <button onClick={() => setShowModal(false)} className="text-[#d8e592]">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[#d8e592]/70 text-sm block mb-1">이름</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="이름을 입력하세요"
-                    className="w-full bg-[#3a3d2e] border border-[#d8e592]/20 rounded-lg px-4 py-3 text-[#d8e592] text-sm placeholder:text-[#d8e592]/30 focus:outline-none focus:border-[#d8e592]/50"
+          {/* Photo + Heart row */}
+          <div className="flex items-start gap-4">
+            {/* Photo upload */}
+            <div className="flex-1">
+              <p className="text-olive-dark/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
+              <label className="flex items-center justify-center w-full h-14 border-2 border-olive-dark/70 rounded-md cursor-pointer hover:bg-olive-light/10 transition-colors">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="" className="h-12 w-12 object-cover rounded" />
+                ) : (
+                  <span className="text-olive-dark text-sm">+ 추가하기</span>
+                )}
+                <input type="file" accept="image/*,video/*" onChange={handleFileChange} className="hidden" />
+              </label>
+              <p className="text-olive-dark/60 text-xs mt-1 text-center">최대 30장</p>
+            </div>
+
+            {/* Heart representative */}
+            <div className="w-24">
+              <p className="text-olive-dark/80 text-xs mb-1.5 text-center">대표사진추가</p>
+              <label className="relative flex items-center justify-center cursor-pointer w-24 h-24">
+                <Heart
+                  size={92}
+                  strokeWidth={2}
+                  className="absolute inset-0 m-auto text-olive-dark"
+                  fill={previewUrl ? "transparent" : "transparent"}
+                />
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt=""
+                    className="absolute w-14 h-14 object-cover"
+                    style={{
+                      clipPath: "path('M28 50 C 5 30, 12 8, 28 18 C 44 8, 51 30, 28 50 Z')",
+                    }}
                   />
-                </div>
-                <div>
-                  <label className="text-[#d8e592]/70 text-sm block mb-1">사진</label>
-                  {previewUrl ? (
-                    <div className="relative w-20 h-20 rounded-lg overflow-hidden">
-                      <img src={previewUrl} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => { setSelectedFile(null); setPreviewUrl(""); }}
-                        className="absolute top-0.5 right-0.5 bg-black/50 rounded-full p-0.5"
-                      >
-                        <X size={12} className="text-white" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-[#d8e592]/20 rounded-lg cursor-pointer hover:border-[#d8e592]/40 transition-colors">
-                      <span className="text-[#d8e592]/40 text-sm">사진 선택</span>
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </label>
-                  )}
-                </div>
-                <button
-                  onClick={addHeart}
-                  className="w-full py-3 bg-[#d8e592] text-[#474a37] rounded-lg font-medium text-sm hover:bg-[#d8e592]/90 transition-colors"
-                >
-                  추가하기
-                </button>
-              </div>
+                ) : (
+                  <span className="relative text-olive-dark text-xs font-medium">+ 추가하기</span>
+                )}
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              </label>
             </div>
           </div>
-        )}
+
+          {/* Upload button */}
+          <div className="flex justify-center pt-4">
+            <button
+              onClick={handleUpload}
+              disabled={hearts.length >= MAX_HEARTS}
+              className="px-8 py-2 border-2 border-olive-dark rounded-md text-olive-dark font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
+            >
+              올리기
+            </button>
+          </div>
+
+          <p className="text-center text-olive-dark/50 text-xs">
+            {hearts.length} / {MAX_HEARTS}
+          </p>
+        </div>
       </div>
     </div>
   );
