@@ -475,12 +475,12 @@ const SnapGuestbook = () => {
         <div className="px-6 pt-4 space-y-5">
           {/* Name */}
           <div className="flex items-center gap-3">
-            <label className="font-serif text-olive-dark text-base shrink-0">이름</label>
+            <label className="font-serif text-white text-base shrink-0">이름</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 border-2 border-olive-dark/70 rounded-md px-3 py-2 text-olive-dark text-sm focus:outline-none focus:border-olive-dark bg-transparent"
+              className="flex-1 border-2 border-white/40 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-white bg-transparent"
             />
           </div>
 
@@ -488,12 +488,12 @@ const SnapGuestbook = () => {
           <div className="flex items-start gap-4">
             {/* Gallery upload (max 30) */}
             <div className="flex-1">
-              <p className="text-olive-dark/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
-              <label className="flex items-center justify-center w-full h-14 border-2 border-olive-dark/70 rounded-md cursor-pointer hover:bg-olive-light/10 transition-colors">
-                <span className="text-olive-dark text-sm">+ 추가하기</span>
+              <p className="text-white/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
+              <label className="flex items-center justify-center w-full h-14 border-2 border-white/40 rounded-md cursor-pointer hover:bg-white/10 transition-colors">
+                <span className="text-white text-sm">+ 추가하기</span>
                 <input type="file" accept="image/*,video/*" multiple onChange={handleGalleryChange} className="hidden" />
               </label>
-              <p className="text-olive-dark/60 text-xs mt-1 text-center">
+              <p className="text-white/60 text-xs mt-1 text-center">
                 {galleryFiles.length} / {MAX_GALLERY}장
               </p>
               {galleryUrls.length > 0 && (
@@ -516,7 +516,7 @@ const SnapGuestbook = () => {
 
             {/* Hero (single) */}
             <div className="w-24">
-              <p className="text-olive-dark/80 text-xs mb-1.5 text-center">대표사진추가</p>
+              <p className="text-white/80 text-xs mb-1.5 text-center">대표사진추가</p>
               <label className="relative flex items-center justify-center cursor-pointer w-24 h-24 group">
                 {/* Heart shape via SVG */}
                 <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
@@ -545,14 +545,14 @@ const SnapGuestbook = () => {
                   />
                 </svg>
                 {!heroUrl && (
-                  <span className="relative text-olive-dark text-xs font-medium pointer-events-none">+ 추가하기</span>
+                  <span className="relative text-white text-xs font-medium pointer-events-none">+ 추가하기</span>
                 )}
                 <input type="file" accept="image/*" onChange={handleHeroChange} className="hidden" />
               </label>
               {heroUrl && (
                 <button
                   onClick={() => setShowAdjust(true)}
-                  className="block mx-auto mt-1 text-[10px] text-olive-dark/70 underline"
+                  className="block mx-auto mt-1 text-[10px] text-white/70 underline"
                 >
                   사진 조정
                 </button>
@@ -565,13 +565,13 @@ const SnapGuestbook = () => {
             <button
               onClick={handleUpload}
               disabled={hearts.length >= MAX_HEARTS}
-              className="px-10 py-2 border-2 border-olive-dark rounded-md text-olive-dark font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
+              className="px-10 py-2 border-2 border-olive-dark rounded-md text-white font-serif text-base hover:bg-olive-dark hover:text-white transition-colors disabled:opacity-40"
             >
               올리기
             </button>
           </div>
 
-          <p className="text-center text-olive-dark/50 text-xs">
+          <p className="text-center text-white/50 text-xs">
             하트 {hearts.length} / {MAX_HEARTS}
           </p>
         </div>
@@ -581,8 +581,8 @@ const SnapGuestbook = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
             <div className="w-full max-w-[360px] bg-white rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-serif text-olive-dark text-base">하트 안에 사진 맞추기</h3>
-                <button onClick={() => setShowAdjust(false)} className="text-olive-dark"><X size={20} /></button>
+                <h3 className="font-serif text-white text-base">하트 안에 사진 맞추기</h3>
+                <button onClick={() => setShowAdjust(false)} className="text-white"><X size={20} /></button>
               </div>
 
               {/* Drag area */}
@@ -619,7 +619,7 @@ const SnapGuestbook = () => {
 
               {/* Zoom slider */}
               <div className="space-y-1">
-                <label className="text-xs text-olive-dark/70">확대 / 축소</label>
+                <label className="text-xs text-white/70">확대 / 축소</label>
                 <input
                   type="range"
                   min={0.5}
@@ -634,7 +634,7 @@ const SnapGuestbook = () => {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setHeroOffset({ x: 0, y: 0, scale: 1.2 })}
-                  className="flex-1 py-2 border border-olive-dark/40 rounded-md text-olive-dark text-sm"
+                  className="flex-1 py-2 border border-olive-dark/40 rounded-md text-white text-sm"
                 >
                   초기화
                 </button>
