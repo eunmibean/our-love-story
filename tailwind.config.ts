@@ -63,8 +63,8 @@ export default {
         },
         olive: {
           DEFAULT: "#474a37",
-          light: "#5a5e47",
-          dark: "#363828",
+          light: "#A3A985",
+          dark: "#474A37",
         },
         lime: {
           DEFAULT: "#d8e592",
