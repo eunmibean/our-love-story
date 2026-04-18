@@ -255,9 +255,9 @@ const SnapGuestbook = () => {
     <div
       className="min-h-screen w-full"
       style={{
-        backgroundColor: "#474a37",
+        backgroundColor: "#ffffff",
         backgroundImage:
-          "radial-gradient(circle, rgba(216,229,146,0.10) 1px, transparent 1.2px)",
+          "radial-gradient(circle, rgba(71,74,55,0.08) 1px, transparent 1.2px)",
         backgroundSize: "18px 18px",
       }}
     >
@@ -266,12 +266,12 @@ const SnapGuestbook = () => {
         <header className="flex items-center justify-between px-5 pt-5 pb-4">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[#f0e6cf] hover:bg-white/10 transition-colors"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#474a37] hover:bg-black/5 transition-colors"
             aria-label="뒤로가기"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-sans text-[#f0e6cf] text-base tracking-[0.25em]">
+          <h1 className="font-sans text-[#474a37] text-base tracking-[0.25em]">
             SNAP GUESTBOOK
           </h1>
           <div className="w-9" />
@@ -279,17 +279,17 @@ const SnapGuestbook = () => {
 
         {/* PHOTOBOOK */}
         <section className="px-3 pb-6 flex flex-col items-center">
-          <p className="text-[10px] tracking-[0.4em] text-[#d8e592] uppercase mb-2">
+          <p className="text-[10px] tracking-[0.4em] text-[#8a8d70] uppercase mb-2">
             Digital Photobook
           </p>
-          <p className="font-serif text-[#f0e6cf]/70 text-xs mb-5">
+          <p className="font-serif text-[#6b6e55] text-xs mb-5">
             드래그하여 페이지를 넘겨보세요
           </p>
 
           <div
             className="rounded-sm"
             style={{
-              filter: "drop-shadow(0 18px 35px rgba(0,0,0,0.45))",
+              filter: "drop-shadow(0 12px 28px rgba(71,74,55,0.18))",
             }}
           >
             <HTMLFlipBook
@@ -327,30 +327,30 @@ const SnapGuestbook = () => {
             </HTMLFlipBook>
           </div>
 
-          <p className="mt-4 text-xs text-[#f0e6cf]/60">
+          <p className="mt-4 text-xs text-[#8a8d70]">
             총 {entries.length}개의 기록
           </p>
         </section>
 
         {/* DIVIDER */}
         <div className="px-6 my-2">
-          <div className="h-px bg-gradient-to-r from-transparent via-[#d8e592]/30 to-transparent" />
+          <div className="h-px bg-gradient-to-r from-transparent via-[#474a37]/15 to-transparent" />
         </div>
 
         {/* UPLOAD AREA */}
         <section className="px-6 pt-4 pb-10 space-y-6">
           <div className="text-center">
-            <p className="text-[10px] tracking-[0.4em] text-[#d8e592] uppercase mb-2">
+            <p className="text-[10px] tracking-[0.4em] text-[#8a8d70] uppercase mb-2">
               Leave Your Memory
             </p>
-            <h2 className="font-serif text-[#f0e6cf] text-lg">
+            <h2 className="font-serif text-[#474a37] text-lg">
               우리들의 페이지를 채워주세요
             </h2>
           </div>
 
           {/* Hero (cover photo) - max 1 */}
           <div>
-            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+            <label className="block text-xs text-[#6b6e55] mb-2 tracking-wider">
               대표 사진 (표지) · 최대 1장
             </label>
             <div className="flex items-center gap-3">
@@ -361,12 +361,12 @@ const SnapGuestbook = () => {
                   className="hidden"
                   onChange={handleHeroChange}
                 />
-                <div className="border border-dashed border-[#d8e592]/50 rounded-md py-3 px-4 text-center text-xs text-[#f0e6cf]/80 hover:bg-white/5 transition">
+                <div className="border border-dashed border-[#474a37]/30 rounded-md py-3 px-4 text-center text-xs text-[#474a37] hover:bg-black/[0.03] transition">
                   {heroUrl ? "표지 사진 변경하기" : "표지 사진 선택하기"}
                 </div>
               </label>
               {heroUrl && (
-                <div className="relative w-12 h-12 rounded overflow-hidden border border-[#d8e592]/40">
+                <div className="relative w-12 h-12 rounded overflow-hidden border border-[#474a37]/20">
                   <img src={heroUrl} alt="hero" className="w-full h-full object-cover" />
                   <button
                     onClick={() => {
@@ -385,7 +385,7 @@ const SnapGuestbook = () => {
 
           {/* Name input */}
           <div>
-            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+            <label className="block text-xs text-[#6b6e55] mb-2 tracking-wider">
               이름
             </label>
             <input
@@ -394,13 +394,13 @@ const SnapGuestbook = () => {
               onChange={(e) => setName(e.target.value)}
               placeholder="이름을 입력해주세요"
               maxLength={20}
-              className="w-full bg-transparent border-0 border-b border-[#d8e592]/40 focus:border-[#d8e592] focus:outline-none focus:ring-0 text-[#f0e6cf] placeholder:text-[#f0e6cf]/30 py-2 text-sm transition-colors"
+              className="w-full bg-transparent border-0 border-b border-[#474a37]/25 focus:border-[#474a37] focus:outline-none focus:ring-0 text-[#474a37] placeholder:text-[#474a37]/35 py-2 text-sm transition-colors"
             />
           </div>
 
           {/* Media upload */}
           <div>
-            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+            <label className="block text-xs text-[#6b6e55] mb-2 tracking-wider">
               사진/동영상 · 최대 {MAX_MEDIA}장 ({mediaFiles.length}/{MAX_MEDIA})
             </label>
             <label className="block cursor-pointer">
@@ -411,10 +411,10 @@ const SnapGuestbook = () => {
                 className="hidden"
                 onChange={handleMediaChange}
               />
-              <div className="border-2 border-dashed border-[#d8e592]/40 rounded-lg py-8 px-4 text-center hover:bg-white/5 transition">
-                <ImagePlus className="w-8 h-8 mx-auto mb-2 text-[#d8e592]" />
-                <p className="text-sm text-[#f0e6cf]">사진/동영상 추가하기</p>
-                <p className="text-[11px] text-[#f0e6cf]/50 mt-1">
+              <div className="border-2 border-dashed border-[#474a37]/25 rounded-lg py-8 px-4 text-center hover:bg-black/[0.03] transition">
+                <ImagePlus className="w-8 h-8 mx-auto mb-2 text-[#474a37]" />
+                <p className="text-sm text-[#474a37]">사진/동영상 추가하기</p>
+                <p className="text-[11px] text-[#6b6e55] mt-1">
                   최대 {MAX_MEDIA}장까지 업로드 가능
                 </p>
               </div>
@@ -425,7 +425,7 @@ const SnapGuestbook = () => {
                 {mediaUrls.map((url, idx) => (
                   <div
                     key={url}
-                    className="relative aspect-square rounded overflow-hidden border border-[#d8e592]/30"
+                    className="relative aspect-square rounded overflow-hidden border border-[#474a37]/15"
                   >
                     <img src={url} alt={`media-${idx}`} className="w-full h-full object-cover" />
                     <button
