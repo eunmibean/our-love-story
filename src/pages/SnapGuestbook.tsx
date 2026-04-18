@@ -181,14 +181,13 @@ const SnapGuestbook = () => {
   const [name, setName] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  const [heroUrl, setHeroUrl] = useState<string>("");
+  
   const nextIdRef = useRef(1);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
       mediaUrls.forEach((u) => URL.revokeObjectURL(u));
-      if (heroUrl) URL.revokeObjectURL(heroUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -211,13 +210,8 @@ const SnapGuestbook = () => {
     });
   };
 
-  const handleHeroChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (heroUrl) URL.revokeObjectURL(heroUrl);
-    setHeroUrl(URL.createObjectURL(file));
-    e.target.value = "";
-  };
+  // Cover photo is automatically derived from the first guest entry's first uploaded media.
+  const heroUrl = entries[0]?.imageUrl ?? "";
 
   const handleSubmit = useCallback(() => {
     if (!name.trim()) {
