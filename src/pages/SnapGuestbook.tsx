@@ -190,57 +190,107 @@ const SnapGuestbook = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, canvasH);
 
-      // Wood tones
-      const woodOuter = "#6b4a2b";
-      const woodMid = "#5a3d22";
-      const woodInner = "#7a5535";
-      const interior = "#3a3d2a";   // dark olive
-      const interiorTop = "#454832";
-      const snow = "#f4ede0";
-      const snowShadow = "#d9cfbb";
+      // Refined walnut wood tones (richer, darker, more sophisticated)
+      const woodHighlight = "#a07748";
+      const woodMid = "#6e4a2a";
+      const woodDeep = "#3e2614";
+      const woodInner = "#83563090";
+      const interior = "#4a4d36";    // dark olive (matches outside bg family)
+      const interiorTop = "#565a3f";
+      const interiorDeep = "#3a3d2a";
+      const snow = "#f3ecd8";
+      const snowShadow = "#cfc4ac";
 
-      // 1) Outer wooden triangle (big frame)
-      buildTrianglePath(ctx, apex, bl, br, 0);
-      ctx.fillStyle = woodOuter;
-      ctx.fill();
-
-      // Wood grain shading on outer frame
+      // 1) Outer wooden triangle frame with rich walnut gradient
       const woodGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
-      woodGrad.addColorStop(0, "#7a5535");
-      woodGrad.addColorStop(0.5, "#6b4a2b");
-      woodGrad.addColorStop(1, "#4e3520");
+      woodGrad.addColorStop(0, woodHighlight);
+      woodGrad.addColorStop(0.35, "#7a5230");
+      woodGrad.addColorStop(0.7, woodMid);
+      woodGrad.addColorStop(1, woodDeep);
       buildTrianglePath(ctx, apex, bl, br, 0);
       ctx.fillStyle = woodGrad;
       ctx.fill();
 
-      // 2) Inner dark olive area (the "pocket" inside the frame)
+      // Subtle wood grain streaks on the outer frame
       ctx.save();
-      buildTrianglePath(ctx, apex, bl, br, 18);
+      buildTrianglePath(ctx, apex, bl, br, 0);
+      ctx.clip();
+      ctx.globalAlpha = 0.10;
+      ctx.strokeStyle = "#2a1808";
+      ctx.lineWidth = 0.6;
+      for (let i = 0; i < 24; i++) {
+        const yy = apex.y + (i / 24) * (bl.y - apex.y);
+        ctx.beginPath();
+        ctx.moveTo(0, yy + Math.sin(i * 1.3) * 2);
+        ctx.bezierCurveTo(w * 0.33, yy + 3, w * 0.66, yy - 2, w, yy + Math.cos(i) * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Inner bevel — a slightly lighter inner triangle band gives a 3D frame feel
+      buildTrianglePath(ctx, apex, bl, br, 8);
+      ctx.fillStyle = "#5a3d22";
+      ctx.fill();
+
+      // 2) Inner dark olive pocket (where everything lives)
+      ctx.save();
+      const innerInset = 22;
+      buildTrianglePath(ctx, apex, bl, br, innerInset);
       ctx.clip();
 
       const interiorGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
       interiorGrad.addColorStop(0, interiorTop);
-      interiorGrad.addColorStop(1, interior);
+      interiorGrad.addColorStop(0.7, interior);
+      interiorGrad.addColorStop(1, interiorDeep);
       ctx.fillStyle = interiorGrad;
       ctx.fillRect(0, 0, w, canvasH);
+
+      // Inner shadow along the frame edge for depth
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 2;
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      buildTrianglePath(ctx, apex, bl, br, innerInset);
+      ctx.stroke();
+      ctx.restore();
 
       // 3) Three mountain peaks (wood colored) inside the frame
       const peaks = getPeaks(apex, bl, br);
       peaks.forEach((p) => {
-        // Peak shadow
+        // soft drop shadow under peak
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.4)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 4;
         buildPeakPath(ctx, p);
         const pgrad = ctx.createLinearGradient(p.x - p.w / 2, p.y, p.x + p.w / 2, p.baseY);
-        pgrad.addColorStop(0, "#8a6038");
-        pgrad.addColorStop(0.5, woodInner);
-        pgrad.addColorStop(1, woodMid);
+        pgrad.addColorStop(0, "#a07346");
+        pgrad.addColorStop(0.45, "#7a5230");
+        pgrad.addColorStop(1, "#3e2614");
         ctx.fillStyle = pgrad;
         ctx.fill();
+        ctx.restore();
 
-        // Subtle ridge highlight on the right side of each peak
+        // wood grain inside the peak
         ctx.save();
         buildPeakPath(ctx, p);
         ctx.clip();
-        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.globalAlpha = 0.12;
+        ctx.strokeStyle = "#2a1808";
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 8; i++) {
+          const yy = p.y + (i / 8) * (p.baseY - p.y);
+          ctx.beginPath();
+          ctx.moveTo(p.x - p.w / 2, yy);
+          ctx.quadraticCurveTo(p.x, yy + 2, p.x + p.w / 2, yy);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        // shadow on right flank
+        ctx.fillStyle = "rgba(0,0,0,0.22)";
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x + p.w / 2, p.baseY);
@@ -252,29 +302,44 @@ const SnapGuestbook = () => {
 
       // 4) Snow caps on each peak
       peaks.forEach((p) => {
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.25)";
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetY = 2;
         buildSnowCap(ctx, p);
         ctx.fillStyle = snow;
         ctx.fill();
-        // small shadow under snow
+        ctx.restore();
+        // soft shadow on snow cap right side
         ctx.save();
         buildSnowCap(ctx, p);
         ctx.clip();
         ctx.fillStyle = snowShadow;
         ctx.beginPath();
-        ctx.ellipse(p.x + p.w * 0.05, p.y + p.w * 0.35, p.w * 0.18, p.w * 0.06, 0, 0, Math.PI * 2);
+        ctx.ellipse(p.x + p.w * 0.06, p.y + p.w * 0.32, p.w * 0.2, p.w * 0.07, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       });
 
-      // 5) Pine forest at the base
+      // 5) Pine forest at the base — two layered rows for depth
       const baseY = bl.y - 22;
       const triBaseW = br.x - bl.x;
+      // back row (smaller, darker)
+      const backCount = Math.floor(triBaseW / 14);
+      ctx.fillStyle = "#1f2818";
+      for (let i = 0; i < backCount; i++) {
+        const t = (i + 0.5) / backCount;
+        const x = bl.x + 22 + t * (triBaseW - 44);
+        const h = 11 + ((i * 37) % 6);
+        drawTree(ctx, x, baseY - 3, h);
+      }
+      // front row
       const treeCount = Math.floor(triBaseW / 16);
       ctx.fillStyle = "#2a3320";
       for (let i = 0; i < treeCount; i++) {
         const t = (i + 0.5) / treeCount;
-        const x = bl.x + 24 + t * (triBaseW - 48);
-        const h = 14 + ((i * 53) % 8);
+        const x = bl.x + 28 + t * (triBaseW - 56);
+        const h = 15 + ((i * 53) % 9);
         drawTree(ctx, x, baseY, h);
       }
 
