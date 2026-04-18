@@ -1,7 +1,6 @@
 import { useRef, useState, useCallback, forwardRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X, ImagePlus, Heart } from "lucide-react";
-// @ts-expect-error - no types shipped
 import HTMLFlipBook from "react-pageflip";
 
 interface GuestEntry {
