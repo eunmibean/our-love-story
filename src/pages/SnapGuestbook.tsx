@@ -255,9 +255,9 @@ const SnapGuestbook = () => {
     <div
       className="min-h-screen w-full"
       style={{
-        backgroundColor: "#474a37",
+        backgroundColor: "#ffffff",
         backgroundImage:
-          "radial-gradient(circle, rgba(216,229,146,0.10) 1px, transparent 1.2px)",
+          "radial-gradient(circle, rgba(71,74,55,0.08) 1px, transparent 1.2px)",
         backgroundSize: "18px 18px",
       }}
     >
@@ -266,12 +266,12 @@ const SnapGuestbook = () => {
         <header className="flex items-center justify-between px-5 pt-5 pb-4">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[#f0e6cf] hover:bg-white/10 transition-colors"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#474a37] hover:bg-black/5 transition-colors"
             aria-label="뒤로가기"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-sans text-[#f0e6cf] text-base tracking-[0.25em]">
+          <h1 className="font-sans text-[#474a37] text-base tracking-[0.25em]">
             SNAP GUESTBOOK
           </h1>
           <div className="w-9" />
@@ -279,17 +279,17 @@ const SnapGuestbook = () => {
 
         {/* PHOTOBOOK */}
         <section className="px-3 pb-6 flex flex-col items-center">
-          <p className="text-[10px] tracking-[0.4em] text-[#d8e592] uppercase mb-2">
+          <p className="text-[10px] tracking-[0.4em] text-[#8a8d70] uppercase mb-2">
             Digital Photobook
           </p>
-          <p className="font-serif text-[#f0e6cf]/70 text-xs mb-5">
+          <p className="font-serif text-[#6b6e55] text-xs mb-5">
             드래그하여 페이지를 넘겨보세요
           </p>
 
           <div
             className="rounded-sm"
             style={{
-              filter: "drop-shadow(0 18px 35px rgba(0,0,0,0.45))",
+              filter: "drop-shadow(0 12px 28px rgba(71,74,55,0.18))",
             }}
           >
             <HTMLFlipBook
@@ -327,23 +327,23 @@ const SnapGuestbook = () => {
             </HTMLFlipBook>
           </div>
 
-          <p className="mt-4 text-xs text-[#f0e6cf]/60">
+          <p className="mt-4 text-xs text-[#8a8d70]">
             총 {entries.length}개의 기록
           </p>
         </section>
 
         {/* DIVIDER */}
         <div className="px-6 my-2">
-          <div className="h-px bg-gradient-to-r from-transparent via-[#d8e592]/30 to-transparent" />
+          <div className="h-px bg-gradient-to-r from-transparent via-[#474a37]/15 to-transparent" />
         </div>
 
         {/* UPLOAD AREA */}
         <section className="px-6 pt-4 pb-10 space-y-6">
           <div className="text-center">
-            <p className="text-[10px] tracking-[0.4em] text-[#d8e592] uppercase mb-2">
+            <p className="text-[10px] tracking-[0.4em] text-[#8a8d70] uppercase mb-2">
               Leave Your Memory
             </p>
-            <h2 className="font-serif text-[#f0e6cf] text-lg">
+            <h2 className="font-serif text-[#474a37] text-lg">
               우리들의 페이지를 채워주세요
             </h2>
           </div>
