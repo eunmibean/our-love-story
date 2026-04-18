@@ -293,6 +293,7 @@ const SnapGuestbook = () => {
             }}
           >
             <HTMLFlipBook
+              key={`book-${entries.length}`}
               ref={bookRef}
               width={bookWidth}
               height={bookHeight}
@@ -318,12 +319,14 @@ const SnapGuestbook = () => {
               style={{}}
               className=""
             >
-              <Cover heroUrl={heroUrl} />
-              {entries.length === 0
-                ? [<EmptyPage key="empty" />]
-                : entries.map((entry, i) => (
-                    <GuestPage key={entry.id} entry={entry} index={i} />
-                  ))}
+              {[
+                <Cover key="cover" heroUrl={heroUrl} />,
+                ...(entries.length === 0
+                  ? [<EmptyPage key="empty" />]
+                  : entries.map((entry, i) => (
+                      <GuestPage key={`g-${entry.id}`} entry={entry} index={i} />
+                    ))),
+              ]}
             </HTMLFlipBook>
           </div>
 
