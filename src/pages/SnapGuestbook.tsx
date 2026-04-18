@@ -350,7 +350,7 @@ const SnapGuestbook = () => {
 
           {/* Hero (cover photo) - max 1 */}
           <div>
-            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+            <label className="block text-xs text-[#6b6e55] mb-2 tracking-wider">
               대표 사진 (표지) · 최대 1장
             </label>
             <div className="flex items-center gap-3">
@@ -361,12 +361,12 @@ const SnapGuestbook = () => {
                   className="hidden"
                   onChange={handleHeroChange}
                 />
-                <div className="border border-dashed border-[#d8e592]/50 rounded-md py-3 px-4 text-center text-xs text-[#f0e6cf]/80 hover:bg-white/5 transition">
+                <div className="border border-dashed border-[#474a37]/30 rounded-md py-3 px-4 text-center text-xs text-[#474a37] hover:bg-black/[0.03] transition">
                   {heroUrl ? "표지 사진 변경하기" : "표지 사진 선택하기"}
                 </div>
               </label>
               {heroUrl && (
-                <div className="relative w-12 h-12 rounded overflow-hidden border border-[#d8e592]/40">
+                <div className="relative w-12 h-12 rounded overflow-hidden border border-[#474a37]/20">
                   <img src={heroUrl} alt="hero" className="w-full h-full object-cover" />
                   <button
                     onClick={() => {
@@ -385,7 +385,7 @@ const SnapGuestbook = () => {
 
           {/* Name input */}
           <div>
-            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+            <label className="block text-xs text-[#6b6e55] mb-2 tracking-wider">
               이름
             </label>
             <input
@@ -394,13 +394,13 @@ const SnapGuestbook = () => {
               onChange={(e) => setName(e.target.value)}
               placeholder="이름을 입력해주세요"
               maxLength={20}
-              className="w-full bg-transparent border-0 border-b border-[#d8e592]/40 focus:border-[#d8e592] focus:outline-none focus:ring-0 text-[#f0e6cf] placeholder:text-[#f0e6cf]/30 py-2 text-sm transition-colors"
+              className="w-full bg-transparent border-0 border-b border-[#474a37]/25 focus:border-[#474a37] focus:outline-none focus:ring-0 text-[#474a37] placeholder:text-[#474a37]/35 py-2 text-sm transition-colors"
             />
           </div>
 
           {/* Media upload */}
           <div>
-            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+            <label className="block text-xs text-[#6b6e55] mb-2 tracking-wider">
               사진/동영상 · 최대 {MAX_MEDIA}장 ({mediaFiles.length}/{MAX_MEDIA})
             </label>
             <label className="block cursor-pointer">
@@ -411,10 +411,10 @@ const SnapGuestbook = () => {
                 className="hidden"
                 onChange={handleMediaChange}
               />
-              <div className="border-2 border-dashed border-[#d8e592]/40 rounded-lg py-8 px-4 text-center hover:bg-white/5 transition">
-                <ImagePlus className="w-8 h-8 mx-auto mb-2 text-[#d8e592]" />
-                <p className="text-sm text-[#f0e6cf]">사진/동영상 추가하기</p>
-                <p className="text-[11px] text-[#f0e6cf]/50 mt-1">
+              <div className="border-2 border-dashed border-[#474a37]/25 rounded-lg py-8 px-4 text-center hover:bg-black/[0.03] transition">
+                <ImagePlus className="w-8 h-8 mx-auto mb-2 text-[#474a37]" />
+                <p className="text-sm text-[#474a37]">사진/동영상 추가하기</p>
+                <p className="text-[11px] text-[#6b6e55] mt-1">
                   최대 {MAX_MEDIA}장까지 업로드 가능
                 </p>
               </div>
@@ -425,7 +425,7 @@ const SnapGuestbook = () => {
                 {mediaUrls.map((url, idx) => (
                   <div
                     key={url}
-                    className="relative aspect-square rounded overflow-hidden border border-[#d8e592]/30"
+                    className="relative aspect-square rounded overflow-hidden border border-[#474a37]/15"
                   >
                     <img src={url} alt={`media-${idx}`} className="w-full h-full object-cover" />
                     <button
