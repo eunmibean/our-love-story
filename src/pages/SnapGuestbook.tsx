@@ -397,19 +397,29 @@ const SnapGuestbook = () => {
 
       ctx.restore(); // end interior clip
 
-      // 7) Couple name + date inside the frame (top area)
-      ctx.fillStyle = "#e8dcc4";
+      // 7) Couple name + date inside the frame (centered upper area, like the reference)
+      ctx.save();
+      ctx.fillStyle = "#f0e6cf";
       ctx.textAlign = "center";
-      ctx.font = "600 18px 'Gowun Batang', serif";
-      ctx.fillText("최준호 & 이수연", apex.x, apex.y + (bl.y - apex.y) * 0.36);
-      ctx.font = "500 13px 'Gowun Batang', serif";
-      ctx.fillStyle = "#cfc1a4";
-      ctx.fillText("2026년 6월 6일", apex.x, apex.y + (bl.y - apex.y) * 0.44);
+      ctx.shadowColor = "rgba(0,0,0,0.45)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
+      ctx.font = "500 22px 'Gowun Batang', serif";
+      ctx.fillText("최준호 & 이수연", apex.x, apex.y + (bl.y - apex.y) * 0.50);
+      ctx.font = "400 14px 'Gowun Batang', serif";
+      ctx.fillStyle = "#d8cdb1";
+      ctx.fillText("2026년 6월 6일", apex.x, apex.y + (bl.y - apex.y) * 0.57);
+      ctx.restore();
 
-      // 8) Outer frame outline
+      // 8) Outer frame outline — dark walnut edge
       buildTrianglePath(ctx, apex, bl, br, 0);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "#3a2515";
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#1f1208";
+      ctx.stroke();
+      // inner highlight rim
+      buildTrianglePath(ctx, apex, bl, br, 22);
+      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
       ctx.stroke();
 
       animFrame = requestAnimationFrame(draw);
