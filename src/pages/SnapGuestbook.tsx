@@ -259,8 +259,12 @@ const SnapGuestbook = () => {
         {/* Header */}
         <header className="flex items-center justify-between px-5 pt-5 pb-4">
           <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[#474a37] hover:bg-black/5 transition-colors"
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) navigate(-1);
+              else navigate("/");
+            }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#474a37] hover:bg-black/5 transition-colors relative z-10"
             aria-label="뒤로가기"
           >
             <ArrowLeft className="w-5 h-5" />
