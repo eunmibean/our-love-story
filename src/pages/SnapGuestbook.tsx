@@ -1,485 +1,212 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import Matter from "matter-js";
+import { useRef, useState, useCallback, forwardRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X, Plus } from "lucide-react";
+import { ArrowLeft, X, ImagePlus, Heart } from "lucide-react";
+// @ts-expect-error - no types shipped
+import HTMLFlipBook from "react-pageflip";
 
-interface HeartItem {
+interface GuestEntry {
   id: number;
   name: string;
   imageUrl: string;
-  imgX: number; // 0-1 within heart
-  imgY: number;
-  imgScale: number;
 }
 
-const MAX_HEARTS = 30;
-const MAX_GALLERY = 30;
+const MAX_MEDIA = 50;
+const COUPLE = "최준호 & 이수연";
+const WEDDING_DATE = "2026년 6월 6일";
+
+// ---- Page wrapper (must be a forwardRef component for react-pageflip) ----
+const Page = forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(
+  ({ children, className = "" }, ref) => (
+    <div
+      ref={ref}
+      className={`relative bg-[#f5efe1] overflow-hidden ${className}`}
+      style={{
+        backgroundImage:
+          "radial-gradient(circle at 20% 10%, rgba(255,255,255,0.6), transparent 40%), radial-gradient(circle at 80% 90%, rgba(0,0,0,0.05), transparent 50%)",
+      }}
+    >
+      {/* paper texture */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.18]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, rgba(120,90,60,0.08) 0 1px, transparent 1px 4px)",
+        }}
+      />
+      {/* page-turn shadow gutter */}
+      <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/20 to-transparent pointer-events-none" />
+      <div className="relative h-full w-full">{children}</div>
+    </div>
+  ),
+);
+Page.displayName = "Page";
+
+// ---- Cover (heart-framed hero photo) ----
+const Cover = forwardRef<HTMLDivElement, { heroUrl: string }>(({ heroUrl }, ref) => (
+  <div
+    ref={ref}
+    className="relative overflow-hidden"
+    style={{
+      background: "linear-gradient(160deg, #6b6f4f 0%, #474a37 60%, #2f3225 100%)",
+    }}
+  >
+    {/* subtle dot pattern */}
+    <div
+      className="absolute inset-0 opacity-30"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, #d8e592 1px, transparent 1.5px)",
+        backgroundSize: "16px 16px",
+      }}
+    />
+    {/* gold border */}
+    <div className="absolute inset-3 border border-[#d8e592]/40 rounded-sm pointer-events-none" />
+
+    <div className="relative h-full w-full flex flex-col items-center justify-center px-6 py-10">
+      <p className="text-[10px] tracking-[0.4em] text-[#d8e592]/80 uppercase mb-4">
+        Our Memories
+      </p>
+
+      {/* Heart frame */}
+      <div className="relative w-[200px] h-[180px] mb-6">
+        <svg viewBox="0 0 200 180" className="absolute inset-0 w-full h-full drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
+          <defs>
+            <clipPath id="coverHeartClip">
+              <path d="M100 165 C 30 115, 10 70, 35 40 C 55 18, 85 22, 100 50 C 115 22, 145 18, 165 40 C 190 70, 170 115, 100 165 Z" />
+            </clipPath>
+          </defs>
+          {heroUrl ? (
+            <image
+              href={heroUrl}
+              x="0"
+              y="0"
+              width="200"
+              height="180"
+              preserveAspectRatio="xMidYMid slice"
+              clipPath="url(#coverHeartClip)"
+            />
+          ) : (
+            <path
+              d="M100 165 C 30 115, 10 70, 35 40 C 55 18, 85 22, 100 50 C 115 22, 145 18, 165 40 C 190 70, 170 115, 100 165 Z"
+              fill="#d8e592"
+              opacity="0.25"
+            />
+          )}
+          <path
+            d="M100 165 C 30 115, 10 70, 35 40 C 55 18, 85 22, 100 50 C 115 22, 145 18, 165 40 C 190 70, 170 115, 100 165 Z"
+            fill="none"
+            stroke="#f0e6cf"
+            strokeWidth="2.5"
+          />
+        </svg>
+        {!heroUrl && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Heart className="w-10 h-10 text-[#d8e592]/70" />
+          </div>
+        )}
+      </div>
+
+      <h1 className="font-serif text-[#f0e6cf] text-2xl tracking-wider mb-2 text-center">
+        {COUPLE}
+      </h1>
+      <p className="font-serif text-[#d8e592] text-base tracking-[0.25em]">
+        우리들의 기록
+      </p>
+      <p className="mt-6 text-[11px] tracking-[0.3em] text-[#f0e6cf]/60">
+        {WEDDING_DATE}
+      </p>
+    </div>
+  </div>
+));
+Cover.displayName = "Cover";
+
+// ---- Empty page placeholder ----
+const EmptyPage = forwardRef<HTMLDivElement>((_, ref) => (
+  <Page ref={ref}>
+    <div className="h-full w-full flex flex-col items-center justify-center text-center px-6">
+      <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#a8946b] flex items-center justify-center mb-4">
+        <Heart className="w-8 h-8 text-[#a8946b]" />
+      </div>
+      <p className="font-serif text-[#5a4a30] text-base mb-2">
+        아직 기록이 없어요
+      </p>
+      <p className="text-xs text-[#8a7a5a] leading-relaxed">
+        하단에서 첫 번째 기록을<br />
+        남겨주세요
+      </p>
+    </div>
+  </Page>
+));
+EmptyPage.displayName = "EmptyPage";
+
+// ---- Guest page ----
+const GuestPage = forwardRef<HTMLDivElement, { entry: GuestEntry; index: number }>(
+  ({ entry, index }, ref) => (
+    <Page ref={ref}>
+      <div className="h-full w-full flex flex-col p-5">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-[10px] tracking-[0.3em] text-[#8a7a5a] uppercase">
+            Page {index + 1}
+          </span>
+          <Heart className="w-3.5 h-3.5 text-[#b8c870]" fill="#d8e592" />
+        </div>
+        <div className="flex-1 rounded-sm overflow-hidden border border-[#d4c4a0] shadow-inner bg-[#ebe2cc]">
+          {entry.imageUrl ? (
+            <img
+              src={entry.imageUrl}
+              alt={entry.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImagePlus className="w-10 h-10 text-[#a8946b]" />
+            </div>
+          )}
+        </div>
+        <div className="mt-3 text-center">
+          <p className="font-serif text-[#3d3520] text-sm">
+            from. <span className="font-medium">{entry.name}</span>
+          </p>
+        </div>
+      </div>
+    </Page>
+  ),
+);
+GuestPage.displayName = "GuestPage";
 
 const SnapGuestbook = () => {
-  const engineRef = useRef<Matter.Engine | null>(null);
-  const runnerRef = useRef<Matter.Runner | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hearts, setHearts] = useState<HeartItem[]>([]);
-  const [name, setName] = useState("");
-  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
-  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
-  const [heroUrl, setHeroUrl] = useState<string>("");
-  const [showAdjust, setShowAdjust] = useState(false);
-  // Hero adjustment transform (relative to heart center, normalized -1..1 ish; scale multiplier)
-  const [heroOffset, setHeroOffset] = useState({ x: 0, y: 0, scale: 1.2 });
   const navigate = useNavigate();
-  const heartBodiesRef = useRef<Map<number, { body: Matter.Body; item: HeartItem }>>(new Map());
-  const nextIdRef = useRef(1);
-  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const bookRef = useRef<any>(null);
 
-  const getLayout = useCallback(() => {
-    const w = Math.min(window.innerWidth, 480);
-    const padding = 16;
-    const triW = w - padding * 2;
-    const triH = triW * 0.88;
-    const topY = 24;
-    const apex = { x: w / 2, y: topY };
-    const bl = { x: padding, y: topY + triH };
-    const br = { x: w - padding, y: topY + triH };
-    return { w, triW, triH, topY, apex, bl, br, canvasH: topY + triH + 30 };
+  const [entries, setEntries] = useState<GuestEntry[]>([]);
+  const [name, setName] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [heroUrl, setHeroUrl] = useState<string>("");
+  const nextIdRef = useRef(1);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      mediaUrls.forEach((u) => URL.revokeObjectURL(u));
+      if (heroUrl) URL.revokeObjectURL(heroUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Setup Matter.js engine + walls — full triangle so hearts stay inside the wooden frame
-  useEffect(() => {
-    const { apex, bl, br } = getLayout();
-
-    const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.9 } });
-    engineRef.current = engine;
-
-    // Inset the triangle so hearts settle inside the dark interior pocket
-    const insetTop = (bl.y - apex.y) * 0.5; // start walls below the peaks zone
-    const insetApex = { x: apex.x, y: apex.y + insetTop };
-    const insetBL = { x: bl.x + 28, y: bl.y - 26 };
-    const insetBR = { x: br.x - 28, y: br.y - 26 };
-
-    const wallThick = 30;
-    const makeWall = (p1: {x:number;y:number}, p2: {x:number;y:number}) => {
-      const cx = (p1.x + p2.x) / 2;
-      const cy = (p1.y + p2.y) / 2;
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const len = Math.sqrt(dx*dx + dy*dy);
-      const angle = Math.atan2(dy, dx);
-      return Matter.Bodies.rectangle(cx, cy, len + wallThick, wallThick, {
-        isStatic: true, angle, friction: 0.4, render: { visible: false },
-      });
-    };
-
-    const leftWall = makeWall(insetApex, insetBL);
-    const rightWall = makeWall(insetApex, insetBR);
-    const bottom = Matter.Bodies.rectangle(
-      (insetBL.x + insetBR.x) / 2, insetBL.y + wallThick / 2,
-      insetBR.x - insetBL.x + wallThick * 2, wallThick,
-      { isStatic: true, friction: 0.5, render: { visible: false } }
-    );
-    Matter.Composite.add(engine.world, [leftWall, rightWall, bottom]);
-
-    const runner = Matter.Runner.create();
-    runnerRef.current = runner;
-    Matter.Runner.run(runner, engine);
-
-    return () => {
-      Matter.Runner.stop(runner);
-      Matter.Engine.clear(engine);
-    };
-  }, [getLayout]);
-
-  const drawHeartPath = (ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) => {
-    const s = size;
-    const topY = cy - s * 0.4;
-    ctx.moveTo(cx, cy + s * 0.55);
-    ctx.bezierCurveTo(cx - s * 1.05, cy - s * 0.05, cx - s * 0.55, topY - s * 0.35, cx, topY + s * 0.15);
-    ctx.bezierCurveTo(cx + s * 0.55, topY - s * 0.35, cx + s * 1.05, cy - s * 0.05, cx, cy + s * 0.55);
-  };
-
-  // Outer triangle frame path (the big wooden triangle)
-  const buildTrianglePath = (
-    ctx: CanvasRenderingContext2D,
-    apex: {x:number;y:number},
-    bl: {x:number;y:number},
-    br: {x:number;y:number},
-    inset: number,
-  ) => {
-    ctx.beginPath();
-    ctx.moveTo(apex.x, apex.y + inset * 1.2);
-    ctx.lineTo(br.x - inset, br.y - inset);
-    ctx.lineTo(bl.x + inset, bl.y - inset);
-    ctx.closePath();
-  };
-
-  // Three inner mountain peaks (shaped like the reference photo)
-  // Returns peak geometry for snow caps
-  const getPeaks = (apex: {x:number;y:number}, bl: {x:number;y:number}, br: {x:number;y:number}) => {
-    const cx = apex.x;
-    const baseY = apex.y + (bl.y - apex.y) * 0.55; // peaks base around middle
-    const triW = br.x - bl.x;
-    const scale = triW / 360;
-    return [
-      { x: cx - 70 * scale, y: baseY - 95 * scale, w: 110 * scale, baseY }, // left
-      { x: cx + 8 * scale,  y: baseY - 145 * scale, w: 130 * scale, baseY }, // center (tallest)
-      { x: cx + 78 * scale, y: baseY - 80 * scale, w: 100 * scale, baseY }, // right
-    ];
-  };
-
-  const buildPeakPath = (
-    ctx: CanvasRenderingContext2D,
-    p: { x: number; y: number; w: number; baseY: number },
-  ) => {
-    // Smooth mountain peak (rounded triangle)
-    const left = p.x - p.w / 2;
-    const right = p.x + p.w / 2;
-    ctx.beginPath();
-    ctx.moveTo(left, p.baseY);
-    ctx.quadraticCurveTo(p.x - p.w * 0.18, p.y + p.w * 0.15, p.x, p.y);
-    ctx.quadraticCurveTo(p.x + p.w * 0.18, p.y + p.w * 0.15, right, p.baseY);
-    ctx.closePath();
-  };
-
-  // Snow cap on top of a peak
-  const buildSnowCap = (
-    ctx: CanvasRenderingContext2D,
-    p: { x: number; y: number; w: number; baseY: number },
-  ) => {
-    const capH = p.w * 0.42;
-    const capBottomY = p.y + capH;
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    // right side following peak
-    ctx.quadraticCurveTo(p.x + p.w * 0.09, p.y + capH * 0.45, p.x + p.w * 0.22, capBottomY);
-    // wavy bottom edge of snow
-    ctx.quadraticCurveTo(p.x + p.w * 0.14, capBottomY - 4, p.x + p.w * 0.06, capBottomY);
-    ctx.quadraticCurveTo(p.x - p.w * 0.02, capBottomY + 5, p.x - p.w * 0.10, capBottomY - 1);
-    ctx.quadraticCurveTo(p.x - p.w * 0.18, capBottomY - 6, p.x - p.w * 0.22, capBottomY);
-    // left side back to apex
-    ctx.quadraticCurveTo(p.x - p.w * 0.09, p.y + capH * 0.45, p.x, p.y);
-    ctx.closePath();
-  };
-
-  const drawTree = (ctx: CanvasRenderingContext2D, x: number, baseY: number, h: number) => {
-    const w = h * 0.5;
-    ctx.beginPath();
-    ctx.moveTo(x, baseY - h);
-    ctx.lineTo(x - w / 2, baseY);
-    ctx.lineTo(x + w / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  // Render loop
-  useEffect(() => {
-    let animFrame: number;
-
-    const draw = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) { animFrame = requestAnimationFrame(draw); return; }
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { animFrame = requestAnimationFrame(draw); return; }
-
-      const dpr = window.devicePixelRatio || 2;
-      const { w, canvasH, apex, bl, br } = getLayout();
-      canvas.width = w * dpr;
-      canvas.height = canvasH * dpr;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${canvasH}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, canvasH);
-
-      // Refined walnut wood tones (richer, darker, more sophisticated)
-      const woodHighlight = "#a07748";
-      const woodMid = "#6e4a2a";
-      const woodDeep = "#3e2614";
-      const woodInner = "#83563090";
-      const interior = "#4a4d36";    // dark olive (matches outside bg family)
-      const interiorTop = "#565a3f";
-      const interiorDeep = "#3a3d2a";
-      const snow = "#f3ecd8";
-      const snowShadow = "#cfc4ac";
-
-      // 1) Outer wooden triangle frame with rich walnut gradient
-      const woodGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
-      woodGrad.addColorStop(0, woodHighlight);
-      woodGrad.addColorStop(0.35, "#7a5230");
-      woodGrad.addColorStop(0.7, woodMid);
-      woodGrad.addColorStop(1, woodDeep);
-      buildTrianglePath(ctx, apex, bl, br, 0);
-      ctx.fillStyle = woodGrad;
-      ctx.fill();
-
-      // Subtle wood grain streaks on the outer frame
-      ctx.save();
-      buildTrianglePath(ctx, apex, bl, br, 0);
-      ctx.clip();
-      ctx.globalAlpha = 0.10;
-      ctx.strokeStyle = "#2a1808";
-      ctx.lineWidth = 0.6;
-      for (let i = 0; i < 24; i++) {
-        const yy = apex.y + (i / 24) * (bl.y - apex.y);
-        ctx.beginPath();
-        ctx.moveTo(0, yy + Math.sin(i * 1.3) * 2);
-        ctx.bezierCurveTo(w * 0.33, yy + 3, w * 0.66, yy - 2, w, yy + Math.cos(i) * 2);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      ctx.restore();
-
-      // Inner bevel — a slightly lighter inner triangle band gives a 3D frame feel
-      buildTrianglePath(ctx, apex, bl, br, 8);
-      ctx.fillStyle = "#5a3d22";
-      ctx.fill();
-
-      // 2) Inner dark olive pocket (where everything lives)
-      ctx.save();
-      const innerInset = 22;
-      buildTrianglePath(ctx, apex, bl, br, innerInset);
-      ctx.clip();
-
-      const interiorGrad = ctx.createLinearGradient(0, apex.y, 0, bl.y);
-      interiorGrad.addColorStop(0, interiorTop);
-      interiorGrad.addColorStop(0.7, interior);
-      interiorGrad.addColorStop(1, interiorDeep);
-      ctx.fillStyle = interiorGrad;
-      ctx.fillRect(0, 0, w, canvasH);
-
-      // Inner shadow along the frame edge for depth
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur = 18;
-      ctx.shadowOffsetY = 2;
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "rgba(0,0,0,0.35)";
-      buildTrianglePath(ctx, apex, bl, br, innerInset);
-      ctx.stroke();
-      ctx.restore();
-
-      // 3) Three mountain peaks (wood colored) inside the frame
-      const peaks = getPeaks(apex, bl, br);
-      peaks.forEach((p) => {
-        // soft drop shadow under peak
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.4)";
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetY = 4;
-        buildPeakPath(ctx, p);
-        const pgrad = ctx.createLinearGradient(p.x - p.w / 2, p.y, p.x + p.w / 2, p.baseY);
-        pgrad.addColorStop(0, "#a07346");
-        pgrad.addColorStop(0.45, "#7a5230");
-        pgrad.addColorStop(1, "#3e2614");
-        ctx.fillStyle = pgrad;
-        ctx.fill();
-        ctx.restore();
-
-        // wood grain inside the peak
-        ctx.save();
-        buildPeakPath(ctx, p);
-        ctx.clip();
-        ctx.globalAlpha = 0.12;
-        ctx.strokeStyle = "#2a1808";
-        ctx.lineWidth = 0.5;
-        for (let i = 0; i < 8; i++) {
-          const yy = p.y + (i / 8) * (p.baseY - p.y);
-          ctx.beginPath();
-          ctx.moveTo(p.x - p.w / 2, yy);
-          ctx.quadraticCurveTo(p.x, yy + 2, p.x + p.w / 2, yy);
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-        // shadow on right flank
-        ctx.fillStyle = "rgba(0,0,0,0.22)";
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + p.w / 2, p.baseY);
-        ctx.lineTo(p.x, p.baseY);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      });
-
-      // 4) Snow caps on each peak
-      peaks.forEach((p) => {
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.25)";
-        ctx.shadowBlur = 4;
-        ctx.shadowOffsetY = 2;
-        buildSnowCap(ctx, p);
-        ctx.fillStyle = snow;
-        ctx.fill();
-        ctx.restore();
-        // soft shadow on snow cap right side
-        ctx.save();
-        buildSnowCap(ctx, p);
-        ctx.clip();
-        ctx.fillStyle = snowShadow;
-        ctx.beginPath();
-        ctx.ellipse(p.x + p.w * 0.06, p.y + p.w * 0.32, p.w * 0.2, p.w * 0.07, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
-
-      // 5) Pine forest at the base — two layered rows for depth
-      const baseY = bl.y - 22;
-      const triBaseW = br.x - bl.x;
-      // back row (smaller, darker)
-      const backCount = Math.floor(triBaseW / 14);
-      ctx.fillStyle = "#1f2818";
-      for (let i = 0; i < backCount; i++) {
-        const t = (i + 0.5) / backCount;
-        const x = bl.x + 22 + t * (triBaseW - 44);
-        const h = 11 + ((i * 37) % 6);
-        drawTree(ctx, x, baseY - 3, h);
-      }
-      // front row
-      const treeCount = Math.floor(triBaseW / 16);
-      ctx.fillStyle = "#2a3320";
-      for (let i = 0; i < treeCount; i++) {
-        const t = (i + 0.5) / treeCount;
-        const x = bl.x + 28 + t * (triBaseW - 56);
-        const h = 15 + ((i * 53) % 9);
-        drawTree(ctx, x, baseY, h);
-      }
-
-      // 6) Hearts inside (drawn over peaks/forest, clipped to interior)
-      heartBodiesRef.current.forEach(({ body, item }) => {
-        const { x, y } = body.position;
-        const angle = body.angle;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
-
-        const size = 18;
-        if (item.imageUrl && imageCache.current.has(item.imageUrl)) {
-          ctx.save();
-          ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, size);
-          ctx.closePath();
-          ctx.clip();
-          const img = imageCache.current.get(item.imageUrl)!;
-          const baseSize = size * 2.2;
-          const drawW = baseSize * item.imgScale;
-          const drawH = baseSize * item.imgScale * (img.height / img.width);
-          ctx.drawImage(
-            img,
-            -drawW / 2 + item.imgX * size,
-            -drawH / 2 + item.imgY * size,
-            drawW,
-            drawH
-          );
-          ctx.restore();
-          ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, size);
-          ctx.closePath();
-          ctx.lineWidth = 1.2;
-          ctx.strokeStyle = "rgba(255,255,255,0.85)";
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          drawHeartPath(ctx, 0, 0, size);
-          ctx.closePath();
-          ctx.fillStyle = "#c9a878";
-          ctx.fill();
-          ctx.lineWidth = 1.2;
-          ctx.strokeStyle = "rgba(60,40,20,0.6)";
-          ctx.stroke();
-          if (item.name) {
-            ctx.fillStyle = "#3a2818";
-            ctx.font = "600 6px 'Noto Sans KR', sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText(item.name.slice(0, 4), 0, 3);
-          }
-        }
-        ctx.restore();
-      });
-
-      ctx.restore(); // end interior clip
-
-      // 7) Couple name + date inside the frame (centered upper area, like the reference)
-      ctx.save();
-      ctx.fillStyle = "#f0e6cf";
-      ctx.textAlign = "center";
-      ctx.shadowColor = "rgba(0,0,0,0.45)";
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetY = 1;
-      ctx.font = "500 22px 'Gowun Batang', serif";
-      ctx.fillText("최준호 & 이수연", apex.x, apex.y + (bl.y - apex.y) * 0.50);
-      ctx.font = "400 14px 'Gowun Batang', serif";
-      ctx.fillStyle = "#d8cdb1";
-      ctx.fillText("2026년 6월 6일", apex.x, apex.y + (bl.y - apex.y) * 0.57);
-      ctx.restore();
-
-      // 8) Outer frame outline — dark walnut edge
-      buildTrianglePath(ctx, apex, bl, br, 0);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = "#1f1208";
-      ctx.stroke();
-      // inner highlight rim
-      buildTrianglePath(ctx, apex, bl, br, 22);
-      ctx.lineWidth = 0.8;
-      ctx.strokeStyle = "rgba(0,0,0,0.6)";
-      ctx.stroke();
-
-      animFrame = requestAnimationFrame(draw);
-    };
-
-    animFrame = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animFrame);
-  }, [getLayout]);
-
-  const dropHeart = useCallback((heartName: string, heartImage: string, offset: {x:number;y:number;scale:number}) => {
-    if (!engineRef.current) return;
-    if (heartBodiesRef.current.size >= MAX_HEARTS) return;
-
-    const { w, topY } = getLayout();
-    const id = nextIdRef.current++;
-    const item: HeartItem = {
-      id,
-      name: heartName || "익명",
-      imageUrl: heartImage || "",
-      imgX: offset.x,
-      imgY: offset.y,
-      imgScale: offset.scale,
-    };
-
-    if (heartImage) {
-      const img = new Image();
-      img.src = heartImage;
-      img.onload = () => imageCache.current.set(heartImage, img);
-    }
-
-    const radius = 16;
-    // Spawn inside the triangle, just below the peak zone
-    const { apex, bl } = getLayout();
-    const spawnY = apex.y + (bl.y - apex.y) * 0.55;
-    const x = w / 2 + (Math.random() - 0.5) * 40;
-    const body = Matter.Bodies.circle(x, spawnY, radius, {
-      restitution: 0.25,
-      friction: 0.6,
-      density: 0.003,
-      render: { visible: false },
-    });
-
-    Matter.Composite.add(engineRef.current.world, body);
-    heartBodiesRef.current.set(id, { body, item });
-    setHearts((prev) => [...prev, item]);
-  }, [getLayout]);
-
-  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const room = MAX_GALLERY - galleryFiles.length;
+    const room = MAX_MEDIA - mediaFiles.length;
     const accepted = files.slice(0, room);
     const newUrls = accepted.map((f) => URL.createObjectURL(f));
-    setGalleryFiles((prev) => [...prev, ...accepted]);
-    setGalleryUrls((prev) => [...prev, ...newUrls]);
+    setMediaFiles((prev) => [...prev, ...accepted]);
+    setMediaUrls((prev) => [...prev, ...newUrls]);
     e.target.value = "";
   };
 
-  const removeGalleryItem = (idx: number) => {
-    setGalleryFiles((prev) => prev.filter((_, i) => i !== idx));
-    setGalleryUrls((prev) => {
+  const removeMedia = (idx: number) => {
+    setMediaFiles((prev) => prev.filter((_, i) => i !== idx));
+    setMediaUrls((prev) => {
       URL.revokeObjectURL(prev[idx]);
       return prev.filter((_, i) => i !== idx);
     });
@@ -489,239 +216,245 @@ const SnapGuestbook = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (heroUrl) URL.revokeObjectURL(heroUrl);
-    const url = URL.createObjectURL(file);
-    setHeroUrl(url);
-    setHeroOffset({ x: 0, y: 0, scale: 1.2 });
-    setShowAdjust(true);
+    setHeroUrl(URL.createObjectURL(file));
     e.target.value = "";
   };
 
-  const handleUpload = () => {
-    if (hearts.length >= MAX_HEARTS) return;
-    dropHeart(name, heroUrl, heroOffset);
+  const handleSubmit = useCallback(() => {
+    if (!name.trim()) {
+      alert("이름을 입력해주세요");
+      return;
+    }
+    if (mediaUrls.length === 0) {
+      alert("사진/동영상을 한 장 이상 추가해주세요");
+      return;
+    }
+    const entry: GuestEntry = {
+      id: nextIdRef.current++,
+      name: name.trim(),
+      imageUrl: mediaUrls[0], // first media becomes the page
+    };
+    setEntries((prev) => [...prev, entry]);
+    // reset form (keep media url referenced by entry — don't revoke)
     setName("");
-    setHeroUrl("");
-    setHeroOffset({ x: 0, y: 0, scale: 1.2 });
-    setGalleryFiles([]);
-    setGalleryUrls((prev) => { prev.forEach(URL.revokeObjectURL); return []; });
-  };
+    setMediaFiles([]);
+    setMediaUrls([]);
+    // flip to last page
+    setTimeout(() => {
+      try {
+        bookRef.current?.pageFlip()?.flip(entries.length + 1);
+      } catch {
+        /* noop */
+      }
+    }, 200);
+  }, [name, mediaUrls, entries.length]);
 
-  // Hero drag in adjust modal
-  const heroDragRef = useRef<{ startX: number; startY: number; offX: number; offY: number } | null>(null);
-  const onHeroPointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    heroDragRef.current = { startX: e.clientX, startY: e.clientY, offX: heroOffset.x, offY: heroOffset.y };
-  };
-  const onHeroPointerMove = (e: React.PointerEvent) => {
-    if (!heroDragRef.current) return;
-    const dx = (e.clientX - heroDragRef.current.startX) / 40; // tune sensitivity
-    const dy = (e.clientY - heroDragRef.current.startY) / 40;
-    setHeroOffset((o) => ({ ...o, x: heroDragRef.current!.offX + dx, y: heroDragRef.current!.offY + dy }));
-  };
-  const onHeroPointerUp = () => { heroDragRef.current = null; };
-
-  const { w, canvasH } = getLayout();
+  const bookWidth = 320;
+  const bookHeight = 440;
 
   return (
     <div
-      className="min-h-screen flex justify-center"
+      className="min-h-screen w-full"
       style={{
-        backgroundColor: "#474A37",
-        backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)",
-        backgroundSize: "14px 14px",
+        backgroundColor: "#474a37",
+        backgroundImage:
+          "radial-gradient(circle, rgba(216,229,146,0.10) 1px, transparent 1.2px)",
+        backgroundSize: "18px 18px",
       }}
     >
-      <div className="w-full max-w-[480px] min-h-screen relative pb-16">
+      <div className="mx-auto w-full max-w-[480px] min-h-screen flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => navigate("/")} className="text-white/90 p-2">
-            <ArrowLeft size={24} />
+        <header className="flex items-center justify-between px-5 pt-5 pb-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-[#f0e6cf] hover:bg-white/10 transition-colors"
+            aria-label="뒤로가기"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-serif text-white text-lg">스냅 방명록</h1>
-          <div className="w-10" />
+          <h1 className="font-sans text-[#f0e6cf] text-base tracking-[0.25em]">
+            SNAP GUESTBOOK
+          </h1>
+          <div className="w-9" />
+        </header>
+
+        {/* PHOTOBOOK */}
+        <section className="px-3 pb-6 flex flex-col items-center">
+          <p className="text-[10px] tracking-[0.4em] text-[#d8e592] uppercase mb-2">
+            Digital Photobook
+          </p>
+          <p className="font-serif text-[#f0e6cf]/70 text-xs mb-5">
+            드래그하여 페이지를 넘겨보세요
+          </p>
+
+          <div
+            className="rounded-sm"
+            style={{
+              filter: "drop-shadow(0 18px 35px rgba(0,0,0,0.45))",
+            }}
+          >
+            <HTMLFlipBook
+              ref={bookRef}
+              width={bookWidth}
+              height={bookHeight}
+              size="fixed"
+              minWidth={280}
+              maxWidth={400}
+              minHeight={380}
+              maxHeight={520}
+              maxShadowOpacity={0.6}
+              showCover={true}
+              mobileScrollSupport={true}
+              drawShadow={true}
+              flippingTime={700}
+              usePortrait={true}
+              startZIndex={0}
+              autoSize={false}
+              clickEventForward={true}
+              useMouseEvents={true}
+              swipeDistance={20}
+              showPageCorners={true}
+              disableFlipByClick={false}
+              startPage={0}
+              style={{}}
+              className=""
+            >
+              <Cover heroUrl={heroUrl} />
+              {entries.length === 0
+                ? [<EmptyPage key="empty" />]
+                : entries.map((entry, i) => (
+                    <GuestPage key={entry.id} entry={entry} index={i} />
+                  ))}
+            </HTMLFlipBook>
+          </div>
+
+          <p className="mt-4 text-xs text-[#f0e6cf]/60">
+            총 {entries.length}개의 기록
+          </p>
+        </section>
+
+        {/* DIVIDER */}
+        <div className="px-6 my-2">
+          <div className="h-px bg-gradient-to-r from-transparent via-[#d8e592]/30 to-transparent" />
         </div>
 
-        {/* Mountain canvas */}
-        <div ref={containerRef} className="relative mx-auto" style={{ width: w, height: canvasH }}>
-          <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0, width: w, height: canvasH }} />
-        </div>
+        {/* UPLOAD AREA */}
+        <section className="px-6 pt-4 pb-10 space-y-6">
+          <div className="text-center">
+            <p className="text-[10px] tracking-[0.4em] text-[#d8e592] uppercase mb-2">
+              Leave Your Memory
+            </p>
+            <h2 className="font-serif text-[#f0e6cf] text-lg">
+              우리들의 페이지를 채워주세요
+            </h2>
+          </div>
 
-        {/* Form */}
-        <div className="px-6 pt-4 space-y-5">
-          {/* Name */}
-          <div className="flex items-center gap-3">
-            <label className="font-serif text-white text-base shrink-0">이름</label>
+          {/* Hero (cover photo) - max 1 */}
+          <div>
+            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+              대표 사진 (표지) · 최대 1장
+            </label>
+            <div className="flex items-center gap-3">
+              <label className="flex-1 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleHeroChange}
+                />
+                <div className="border border-dashed border-[#d8e592]/50 rounded-md py-3 px-4 text-center text-xs text-[#f0e6cf]/80 hover:bg-white/5 transition">
+                  {heroUrl ? "표지 사진 변경하기" : "표지 사진 선택하기"}
+                </div>
+              </label>
+              {heroUrl && (
+                <div className="relative w-12 h-12 rounded overflow-hidden border border-[#d8e592]/40">
+                  <img src={heroUrl} alt="hero" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => {
+                      URL.revokeObjectURL(heroUrl);
+                      setHeroUrl("");
+                    }}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-black/70 rounded-full flex items-center justify-center text-white"
+                    aria-label="삭제"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Name input */}
+          <div>
+            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+              이름
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 border-2 border-white/40 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-white bg-transparent"
+              placeholder="이름을 입력해주세요"
+              maxLength={20}
+              className="w-full bg-transparent border-0 border-b border-[#d8e592]/40 focus:border-[#d8e592] focus:outline-none focus:ring-0 text-[#f0e6cf] placeholder:text-[#f0e6cf]/30 py-2 text-sm transition-colors"
             />
           </div>
 
-          {/* Photos/Videos + Hero */}
-          <div className="flex items-start gap-4">
-            {/* Gallery upload (max 30) */}
-            <div className="flex-1">
-              <p className="text-white/80 text-xs mb-1.5 ml-1">사진 / 동영상</p>
-              <label className="flex items-center justify-center w-full h-14 border-2 border-white/40 rounded-md cursor-pointer hover:bg-white/10 transition-colors">
-                <span className="text-white text-sm">+ 추가하기</span>
-                <input type="file" accept="image/*,video/*" multiple onChange={handleGalleryChange} className="hidden" />
-              </label>
-              <p className="text-white/60 text-xs mt-1 text-center">
-                {galleryFiles.length} / {MAX_GALLERY}장
-              </p>
-              {galleryUrls.length > 0 && (
-                <div className="grid grid-cols-4 gap-1.5 mt-2">
-                  {galleryUrls.map((url, i) => (
-                    <div key={i} className="relative aspect-square rounded overflow-hidden">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        onClick={() => removeGalleryItem(i)}
-                        className="absolute top-0.5 right-0.5 bg-black/60 rounded-full p-0.5"
-                        aria-label="remove"
-                      >
-                        <X size={10} className="text-white" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Media upload */}
+          <div>
+            <label className="block text-xs text-[#d8e592] mb-2 tracking-wider">
+              사진/동영상 · 최대 {MAX_MEDIA}장 ({mediaFiles.length}/{MAX_MEDIA})
+            </label>
+            <label className="block cursor-pointer">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={handleMediaChange}
+              />
+              <div className="border-2 border-dashed border-[#d8e592]/40 rounded-lg py-8 px-4 text-center hover:bg-white/5 transition">
+                <ImagePlus className="w-8 h-8 mx-auto mb-2 text-[#d8e592]" />
+                <p className="text-sm text-[#f0e6cf]">사진/동영상 추가하기</p>
+                <p className="text-[11px] text-[#f0e6cf]/50 mt-1">
+                  최대 {MAX_MEDIA}장까지 업로드 가능
+                </p>
+              </div>
+            </label>
 
-            {/* Hero (single) */}
-            <div className="w-24">
-              <p className="text-white/80 text-xs mb-1.5 text-center">대표사진추가</p>
-              <label className="relative flex items-center justify-center cursor-pointer w-24 h-24 group">
-                {/* Heart shape via SVG */}
-                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
-                  <defs>
-                    <clipPath id="heartClip">
-                      <path d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z" />
-                    </clipPath>
-                  </defs>
-                  {heroUrl && (
-                    <image
-                      href={heroUrl}
-                      x={50 - 40 * heroOffset.scale + heroOffset.x * 4}
-                      y={50 - 40 * heroOffset.scale + heroOffset.y * 4}
-                      width={80 * heroOffset.scale}
-                      height={80 * heroOffset.scale}
-                      preserveAspectRatio="xMidYMid slice"
-                      clipPath="url(#heartClip)"
-                    />
-                  )}
-                  <path
-                    d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z"
-                    fill={heroUrl ? "none" : "rgba(255,255,255,0.08)"}
-                    stroke="#ffffff"
-                    strokeWidth="2.5"
-                  />
-                </svg>
-                {!heroUrl && (
-                  <span className="relative text-white text-xs font-medium pointer-events-none">+ 추가하기</span>
-                )}
-                <input type="file" accept="image/*" onChange={handleHeroChange} className="hidden" />
-              </label>
-              {heroUrl && (
-                <button
-                  onClick={() => setShowAdjust(true)}
-                  className="block mx-auto mt-1 text-[10px] text-white/70 underline"
-                >
-                  사진 조정
-                </button>
-              )}
-            </div>
+            {mediaUrls.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                {mediaUrls.map((url, idx) => (
+                  <div
+                    key={url}
+                    className="relative aspect-square rounded overflow-hidden border border-[#d8e592]/30"
+                  >
+                    <img src={url} alt={`media-${idx}`} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeMedia(idx)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/70 rounded-full flex items-center justify-center text-white"
+                      aria-label="삭제"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Upload */}
-          <div className="flex justify-center pt-3">
-            <button
-              onClick={handleUpload}
-              disabled={hearts.length >= MAX_HEARTS}
-              className="px-10 py-2 border-2 border-white/60 rounded-md text-white font-serif text-base hover:bg-white/10 transition-colors disabled:opacity-40"
-            >
-              올리기
-            </button>
-          </div>
-
-          <p className="text-center text-white/50 text-xs">
-            하트 {hearts.length} / {MAX_HEARTS}
-          </p>
-        </div>
-
-        {/* Hero adjust modal */}
-        {showAdjust && heroUrl && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
-            <div className="w-full max-w-[360px] bg-white rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-serif text-white text-base">하트 안에 사진 맞추기</h3>
-                <button onClick={() => setShowAdjust(false)} className="text-white"><X size={20} /></button>
-              </div>
-
-              {/* Drag area */}
-              <div
-                onPointerDown={onHeroPointerDown}
-                onPointerMove={onHeroPointerMove}
-                onPointerUp={onHeroPointerUp}
-                onPointerCancel={onHeroPointerUp}
-                className="relative mx-auto w-64 h-64 touch-none select-none cursor-grab active:cursor-grabbing"
-              >
-                <svg viewBox="0 0 100 100" className="w-full h-full">
-                  <defs>
-                    <clipPath id="heartClipBig">
-                      <path d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z" />
-                    </clipPath>
-                  </defs>
-                  <image
-                    href={heroUrl}
-                    x={50 - 40 * heroOffset.scale + heroOffset.x * 4}
-                    y={50 - 40 * heroOffset.scale + heroOffset.y * 4}
-                    width={80 * heroOffset.scale}
-                    height={80 * heroOffset.scale}
-                    preserveAspectRatio="xMidYMid slice"
-                    clipPath="url(#heartClipBig)"
-                  />
-                  <path
-                    d="M50 88 C 8 60, 12 22, 50 38 C 88 22, 92 60, 50 88 Z"
-                    fill="none"
-                    stroke="#474A37"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              </div>
-
-              {/* Zoom slider */}
-              <div className="space-y-1">
-                <label className="text-xs text-white/70">확대 / 축소</label>
-                <input
-                  type="range"
-                  min={0.5}
-                  max={3}
-                  step={0.05}
-                  value={heroOffset.scale}
-                  onChange={(e) => setHeroOffset((o) => ({ ...o, scale: parseFloat(e.target.value) }))}
-                  className="w-full accent-olive-dark"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => setHeroOffset({ x: 0, y: 0, scale: 1.2 })}
-                  className="flex-1 py-2 border border-olive-dark/40 rounded-md text-white text-sm"
-                >
-                  초기화
-                </button>
-                <button
-                  onClick={() => setShowAdjust(false)}
-                  className="flex-1 py-2 bg-olive-dark text-white rounded-md text-sm"
-                >
-                  완료
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+          {/* Submit */}
+          <button
+            onClick={handleSubmit}
+            className="w-full py-4 rounded-md font-medium tracking-[0.2em] text-sm transition-all hover:brightness-110 active:scale-[0.98]"
+            style={{
+              backgroundColor: "#d8e592",
+              color: "#3d4225",
+              boxShadow: "0 6px 18px rgba(216,229,146,0.25)",
+            }}
+          >
+            올리기
+          </button>
+        </section>
       </div>
     </div>
   );
