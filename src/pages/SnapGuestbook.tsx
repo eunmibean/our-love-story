@@ -311,7 +311,7 @@ const SnapGuestbook = () => {
               clickEventForward={true}
               useMouseEvents={true}
               swipeDistance={20}
-              showPageCorners={true}
+              showPageCorners={false}
               disableFlipByClick={false}
               startPage={0}
               style={{}}
