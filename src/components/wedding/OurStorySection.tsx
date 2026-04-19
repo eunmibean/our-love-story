@@ -181,8 +181,8 @@ const OurStorySection = () => {
                   }}
                 >
                   <span
-                    className="text-5xl text-black"
-                    style={{ fontFamily: "'Gowun Batang', serif" }}
+                    className="text-6xl text-black"
+                    style={{ fontFamily: "'NanumGyuri', 'Gowun Batang', serif" }}
                   >
                     사랑해
                   </span>
