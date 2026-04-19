@@ -285,8 +285,10 @@ const SnapGuestbook = () => {
           </p>
 
           <div
-            className="rounded-sm"
+            className="rounded-sm overflow-hidden"
             style={{
+              width: bookWidth,
+              height: bookHeight,
               filter: "drop-shadow(0 12px 28px rgba(71,74,55,0.18))",
             }}
           >
