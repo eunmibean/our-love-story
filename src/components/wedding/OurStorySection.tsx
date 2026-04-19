@@ -153,28 +153,15 @@ const OurStorySection = () => {
                 >
                   <motion.div
                     layoutId={`polaroid-${selected}`}
-                    className={`relative w-full aspect-square bg-secondary/50 overflow-hidden ${frameStyles[selected % frameStyles.length]} border-primary/40`}
+                    className="relative w-full aspect-square bg-secondary/40 overflow-hidden"
+                    style={{ borderRadius: "1px" }}
                   >
-                    <svg
-                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                    >
-                      <path
-                        d={getSquigglyPath(selected)}
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        opacity="0.6"
-                      />
-                    </svg>
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/60">
                       <span className="text-5xl">📷</span>
                     </div>
                   </motion.div>
                   <span
-                    className="block text-center text-sm font-bold text-primary tracking-wider mt-3"
+                    className="block text-center text-base font-bold text-foreground/80 tracking-wider mt-4"
                     style={{ fontFamily: "'Gowun Batang', serif" }}
                   >
                     {months[selected].label}
