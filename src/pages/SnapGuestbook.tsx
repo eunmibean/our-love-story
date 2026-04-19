@@ -320,10 +320,13 @@ const SnapGuestbook = () => {
               {[
                 <Cover key="cover" heroUrl={heroUrl} />,
                 ...(entries.length === 0
-                  ? [<EmptyPage key="empty" />]
-                  : entries.map((entry, i) => (
-                      <GuestPage key={`g-${entry.id}`} entry={entry} index={i} />
-                    ))),
+                  ? [<EmptyPage key="empty-1" />, <EmptyPage key="empty-2" />]
+                  : [
+                      ...entries.map((entry, i) => (
+                        <GuestPage key={`g-${entry.id}`} entry={entry} index={i} />
+                      )),
+                      ...(entries.length % 2 === 0 ? [<EmptyPage key="empty-pad" />] : []),
+                    ]),
               ]}
             </HTMLFlipBook>
           </div>
