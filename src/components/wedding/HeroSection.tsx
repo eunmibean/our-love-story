@@ -21,7 +21,7 @@ const HeroSection = () => {
           <p className="text-foreground/70 text-sm drop-shadow">2025. 00. 00 토요일 오후 0시</p>
         </div>
       </div>
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce-down">
+      <div className="absolute bottom-8 inset-x-0 mx-auto w-fit flex flex-col items-center gap-2 animate-bounce-down">
         <span className="text-xs text-primary/60 tracking-widest">SCROLL</span>
         <ChevronDown className="h-5 w-5 text-primary/60" />
       </div>
