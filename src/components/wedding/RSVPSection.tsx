@@ -74,7 +74,8 @@ const RSVPSection = () => {
       <div className="text-center">
         <button
           onClick={() => setOpen(true)}
-          className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+          className="px-8 py-3 rounded-full font-medium text-sm transition-colors"
+          style={{ backgroundColor: "#a3bd7a", color: "#A4BE7B" }}
         >
           참석 의사 전달하기
         </button>
@@ -154,7 +155,8 @@ const RSVPSection = () => {
 
               <button
                 onClick={handleSubmit}
-                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+                className="w-full py-3 rounded-xl font-medium text-sm transition-colors"
+                style={{ backgroundColor: "#a3bd7a", color: "#A4BE7B" }}
               >
                 참석 의사 전달하기
               </button>

@@ -78,7 +78,8 @@ const GuestbookSection = () => {
         />
         <button
           onClick={handleSubmit}
-          className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+          className="w-full py-2.5 rounded-xl font-medium text-sm transition-colors"
+          style={{ backgroundColor: "#a3bd7a", color: "#A4BE7B" }}
         >
           등록하기
         </button>
