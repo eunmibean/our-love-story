@@ -66,8 +66,8 @@ const OurStorySection = () => {
           >
             {/* Month label - hand-drawn style */}
             <span
-              className="text-xs font-bold text-primary tracking-wider mb-1"
-              style={{ fontFamily: "'Gowun Batang', serif" }}
+              className="text-xs font-bold tracking-wider mb-1"
+              style={{ fontFamily: "'Gowun Batang', serif", color: "#333333" }}
             >
               {month.label}
             </span>
