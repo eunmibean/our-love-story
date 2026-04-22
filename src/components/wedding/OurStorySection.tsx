@@ -75,7 +75,8 @@ const OurStorySection = () => {
             {/* Photo frame with hand-drawn border effect */}
             <motion.div
               layoutId={`polaroid-${i}`}
-              className={`relative w-full aspect-square bg-secondary/50 overflow-hidden ${frameStyles[i % frameStyles.length]} border-primary/40`}
+              className={`relative w-full aspect-square bg-secondary/50 overflow-hidden ${frameStyles[i % frameStyles.length]}`}
+              style={{ borderColor: "#5F8D39" }}
             >
               {/* Squiggly SVG frame overlay */}
               <svg
@@ -86,7 +87,7 @@ const OurStorySection = () => {
                 <path
                   d={getSquigglyPath(i)}
                   fill="none"
-                  stroke="hsl(var(--primary))"
+                  stroke="#5F8D39"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   opacity="0.6"
