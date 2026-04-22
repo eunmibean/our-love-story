@@ -87,7 +87,6 @@ const OurStorySection = () => {
                 <path
                   d={getSquigglyPath(i)}
                   fill="none"
-                  stroke="hsl(var(--primary))"
                   stroke="#5F8D39"
                   strokeWidth="2.5"
                   strokeLinecap="round"
