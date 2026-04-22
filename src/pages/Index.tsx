@@ -14,8 +14,8 @@ import SectionDivider from "@/components/wedding/SectionDivider";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex justify-center">
-      <div className="w-full max-w-[480px] bg-background shadow-2xl shadow-black/10 min-h-screen">
+    <div className="min-h-screen bg-white flex justify-center">
+      <div className="w-full max-w-[480px] shadow-2xl shadow-black/10 min-h-screen" style={{ backgroundImage: "url('/bg_img_ivory.jpg')", backgroundRepeat: "repeat", backgroundSize: "auto" }}>
         <HeroSection />
         <SectionDivider />
         <InvitationCard />
