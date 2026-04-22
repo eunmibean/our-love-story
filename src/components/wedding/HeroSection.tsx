@@ -1,16 +1,8 @@
 import { ChevronDown } from "lucide-react";
-import heroImage from "@/assets/hero-placeholder.jpg";
-
 const HeroSection = () => {
   return (
     <section className="relative h-screen w-full overflow-hidden">
-      <img
-        src={heroImage}
-        alt="Wedding hero"
-        className="absolute inset-0 w-full h-full object-cover"
-        width={512}
-        height={1024}
-      />
+      <div className="absolute inset-0 w-full h-full bg-white" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center space-y-4">
