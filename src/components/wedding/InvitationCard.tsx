@@ -7,12 +7,6 @@ const InvitationCard = () => {
   return (
     <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`}>
       <div className="text-center space-y-8">
-        <div className="flex items-center justify-center gap-2">
-          <Star className="h-3 w-3 text-primary/40 fill-primary/40" />
-          <Star className="h-4 w-4 text-primary/60 fill-primary/60" />
-          <Star className="h-3 w-3 text-primary/40 fill-primary/40" />
-        </div>
-
         <div className="space-y-1 font-serif text-sm text-muted-foreground">
           <p>&lt;신랑아버지&gt;·&lt;신랑어머니&gt;의 장남 <span className="text-foreground font-medium">&lt;신랑이름&gt;</span></p>
           <p>&lt;신부아버지&gt;·&lt;신부어머니&gt;의 장녀 <span className="text-foreground font-medium">&lt;신부이름&gt;</span></p>
