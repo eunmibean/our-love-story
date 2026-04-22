@@ -46,7 +46,8 @@ const ContactSection = () => {
       <div className="text-center">
         <button
           onClick={() => setOpen(true)}
-          className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+          className="px-8 py-3 rounded-full font-medium text-sm transition-colors"
+          style={{ backgroundColor: "#a3bd7a", color: "#A4BE7B" }}
         >
           연락하기
         </button>
