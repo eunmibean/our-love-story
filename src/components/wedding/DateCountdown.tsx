@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useInView } from "@/hooks/useInView";
 
 // TODO: 실제 결혼 날짜로 변경하세요
-const WEDDING_DATE = new Date("2025-10-18T13:00:00");
+const WEDDING_DATE = new Date("2026-10-10T13:00:00");
 const WEDDING_YEAR = WEDDING_DATE.getFullYear();
 const WEDDING_MONTH = WEDDING_DATE.getMonth(); // 0-indexed
 const WEDDING_DAY = WEDDING_DATE.getDate();
