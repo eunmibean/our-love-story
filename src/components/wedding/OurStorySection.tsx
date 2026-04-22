@@ -77,6 +77,7 @@ const OurStorySection = () => {
               layoutId={`polaroid-${i}`}
               className={`relative w-full aspect-square bg-secondary/50 overflow-hidden ${frameStyles[i % frameStyles.length]}`}
               style={{ borderColor: "#5F8D39" }}
+              style={{ borderColor: "#A4BE7B" }}
             >
               {/* Squiggly SVG frame overlay */}
               <svg
@@ -88,6 +89,7 @@ const OurStorySection = () => {
                   d={getSquigglyPath(i)}
                   fill="none"
                   stroke="#5F8D39"
+                  stroke="#A4BE7B"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   opacity="0.6"
