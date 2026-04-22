@@ -47,7 +47,7 @@ const ContactSection = () => {
         <button
           onClick={() => setOpen(true)}
           className="px-8 py-3 rounded-full font-medium text-sm transition-colors"
-          style={{ backgroundColor: "#a3bd7a", color: "#A4BE7B" }}
+          style={{ backgroundColor: "#a3bd7a", color: "#fff0d0" }}
         >
           연락하기
         </button>

@@ -22,7 +22,7 @@ const LocationSection = () => {
           <a
             href="#"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-colors"
-            style={{ backgroundColor: "#a3bd7a", color: "#A4BE7B" }}
+            style={{ backgroundColor: "#a3bd7a", color: "#fff0d0" }}
           >
             <Navigation className="h-4 w-4" />
             길찾기
