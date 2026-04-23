@@ -6,7 +6,6 @@ const InvitationCard = () => {
 
   return (
     <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`}>
-      <div style={{ backgroundImage: "url('/bg_img_white.jpg')", backgroundRepeat: "repeat", backgroundSize: "auto" }} className="rounded-lg p-6">
       <div className="text-center space-y-8">
         <div className="space-y-1 font-serif text-sm text-muted-foreground">
           <p>&lt;신랑아버지&gt;·&lt;신랑어머니&gt;의 장남 <span className="text-foreground font-medium">&lt;신랑이름&gt;</span></p>
@@ -31,7 +30,6 @@ const InvitationCard = () => {
         <p className="font-serif text-primary text-sm tracking-wider">
           &lt;신랑이름&gt;·&lt;신부이름&gt; 드림
         </p>
-      </div>
       </div>
     </section>
   );
