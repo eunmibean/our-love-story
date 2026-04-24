@@ -249,10 +249,9 @@ const SnapGuestbook = () => {
     <div
       className="min-h-screen w-full"
       style={{
-        backgroundColor: "#ffffff",
-        backgroundImage:
-          "radial-gradient(circle, rgba(71,74,55,0.08) 1px, transparent 1.2px)",
-        backgroundSize: "18px 18px",
+        backgroundImage: "url('/bg_img_white.jpg')",
+        backgroundRepeat: "repeat",
+        backgroundSize: "auto",
       }}
     >
       <div className="mx-auto w-full max-w-[480px] min-h-screen flex flex-col">
