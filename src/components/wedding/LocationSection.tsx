@@ -13,6 +13,7 @@ const LocationSection = () => {
         <div className="w-full h-48 rounded-xl bg-card/50 flex items-center justify-center border border-border">
           <div className="text-center text-muted-foreground text-sm">
             <MapPin className="h-8 w-8 mx-auto mb-2 text-primary/50" />
+            <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=o0i4wq3tr3"></script>
             <p>카카오맵 임베드 영역</p>
           </div>
         </div>

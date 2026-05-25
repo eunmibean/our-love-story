@@ -38,7 +38,7 @@ const DateCountdown = () => {
     <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`}>
       <div className="text-center space-y-6">
         <p className="font-serif text-foreground">
-          신랑이름 <span className="text-primary">❤️</span> 신부이름의 결혼식이{" "}
+          김종재 <span className="text-primary">❤️</span> 전민정의 결혼식이{" "}
           <span className="text-primary font-bold">{daysLeft}</span>일 남았습니다
         </p>
 
@@ -66,7 +66,7 @@ const DateCountdown = () => {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          {WEDDING_YEAR}년 {WEDDING_MONTH + 1}월 {WEDDING_DAY}일 토요일 오후 1시
+          {WEDDING_YEAR}년 {WEDDING_MONTH + 1}월 {WEDDING_DAY}일 토요일 오후 4시 50분
         </p>
       </div>
     </section>

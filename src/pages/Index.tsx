@@ -20,8 +20,6 @@ const Index = () => {
         <SectionDivider />
         <InvitationCard />
         <SectionDivider />
-        <ContactSection />
-        <SectionDivider />
         <OurStorySection />
         <SectionDivider />
         <GallerySection />
@@ -33,6 +31,7 @@ const Index = () => {
         <VenueInfo />
         <SectionDivider />
         <AccountSection />
+        <ContactSection />
         <SectionDivider />
         <SnapSection />
         <SectionDivider />

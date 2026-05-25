@@ -8,9 +8,9 @@ const HeroSection = () => {
         <div className="text-center space-y-4">
           <p className="font-serif text-primary/80 text-sm tracking-[0.3em] drop-shadow-lg">WEDDING INVITATION</p>
           <h1 className="font-serif text-4xl text-foreground tracking-wider drop-shadow-lg">
-            신랑이름 <span className="text-primary">&</span> 신부이름
+            김종재 <span className="text-primary">&</span> 전민정
           </h1>
-          <p className="text-foreground/70 text-sm drop-shadow">2025. 00. 00 토요일 오후 0시</p>
+          <p className="text-foreground/70 text-sm drop-shadow">2026. 10. 10 토요일 오후 4시 50분</p>
         </div>
       </div>
       <div className="absolute bottom-8 inset-x-0 mx-auto w-fit flex flex-col items-center gap-2 animate-bounce-down">
