@@ -12,8 +12,8 @@ interface GuestEntry {
 }
 
 const MAX_MEDIA = 50;
-const COUPLE = "최준호 & 이수연";
-const WEDDING_DATE = "2026년 6월 6일";
+const COUPLE = "김종재 & 전민정";
+const WEDDING_DATE = "2026년 10월 10일";
 
 // ---- Page wrapper (must be a forwardRef component for react-pageflip) ----
 const Page = forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(

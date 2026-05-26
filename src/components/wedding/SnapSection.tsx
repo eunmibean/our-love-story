@@ -57,7 +57,7 @@ const SnapSection = () => {
 
       {/* Date notice */}
       <div className="text-center text-xs text-muted-foreground space-y-0.5">
-        <p>2026-10-24 12:30부터</p>
+        <p>2026-10-10 10:30부터</p>
         <p>업로드 가능합니다.</p>
       </div>
     </section>

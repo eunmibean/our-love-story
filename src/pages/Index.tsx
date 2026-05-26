@@ -7,6 +7,8 @@ import DateCountdown from "@/components/wedding/DateCountdown";
 import LocationSection from "@/components/wedding/LocationSection";
 import VenueInfo from "@/components/wedding/VenueInfo";
 import AccountSection from "@/components/wedding/AccountSection";
+import RSVPSection from "@/components/wedding/RSVPSection";
+import RSVPInitialPopup from "@/components/wedding/RSVPInitialPopup";
 
 import SnapSection from "@/components/wedding/SnapSection";
 import WeddingFooter from "@/components/wedding/WeddingFooter";
@@ -26,6 +28,8 @@ const Index = () => {
         <SectionDivider />
         <DateCountdown />
         <SectionDivider />
+        <RSVPSection />
+        <SectionDivider />
         <LocationSection />
         <SectionDivider />
         <VenueInfo />
@@ -37,6 +41,7 @@ const Index = () => {
         <SectionDivider />
         <WeddingFooter />
       </div>
+      <RSVPInitialPopup />
     </div>
   );
 };
