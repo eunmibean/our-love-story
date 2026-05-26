@@ -9,15 +9,15 @@ interface ContactPerson {
 }
 
 const groomSide: ContactPerson[] = [
-  { relation: "신랑", name: "신랑이름", phone: "010-0000-0000" },
-  { relation: "신랑 아버지", name: "신랑아버지", phone: "010-0000-0000" },
-  { relation: "신랑 어머니", name: "신랑어머니", phone: "010-0000-0000" },
+  { relation: "신랑", name: "김종재", phone: "010-7732-7392" },
+  { relation: "신랑 아버지", name: "김백배", phone: "010-5014-8902" },
+  { relation: "신랑 어머니", name: "이금자", phone: "010-6335-4388" },
 ];
 
 const brideSide: ContactPerson[] = [
-  { relation: "신부", name: "신부이름", phone: "010-0000-0000" },
-  { relation: "신부 아버지", name: "신부아버지", phone: "010-0000-0000" },
-  { relation: "신부 어머니", name: "신부어머니", phone: "010-0000-0000" },
+  { relation: "신부", name: "전민정", phone: "010-9422-0231" },
+  { relation: "신부 아버지", name: "전종호", phone: "010-5014-8902" },
+  { relation: "신부 어머니", name: "이영신", phone: "010-8887-5643" },
 ];
 
 const ContactCard = ({ person }: { person: ContactPerson }) => (
@@ -47,7 +47,7 @@ const ContactSection = () => {
         <button
           onClick={() => setOpen(true)}
           className="px-8 py-3 rounded-full font-medium text-sm transition-colors"
-          style={{ backgroundColor: "#a3bd7a", color: "#fff0d0" }}
+          style={{color: "#5d5d5d", border: "1px solid #d2d2d2", borderRadius: "4px", boxShadow: "1px 1px 4px 1px rgba(0, 0, 0, 0.1)"}}
         >
           연락하기
         </button>

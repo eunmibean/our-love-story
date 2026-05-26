@@ -2,16 +2,18 @@ import { useRef, useState, useCallback, forwardRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X, ImagePlus, Heart } from "lucide-react";
 import HTMLFlipBook from "react-pageflip";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface GuestEntry {
-  id: number;
+  id: string;
   name: string;
   imageUrl: string;
 }
 
 const MAX_MEDIA = 50;
-const COUPLE = "최준호 & 이수연";
-const WEDDING_DATE = "2026년 6월 6일";
+const COUPLE = "김종재 & 전민정";
+const WEDDING_DATE = "2026년 10월 10일";
 
 // ---- Page wrapper (must be a forwardRef component for react-pageflip) ----
 const Page = forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(
@@ -175,16 +177,45 @@ GuestPage.displayName = "GuestPage";
 
 const SnapGuestbook = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const bookRef = useRef<any>(null);
 
   const [entries, setEntries] = useState<GuestEntry[]>([]);
   const [name, setName] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
-  
-  const nextIdRef = useRef(1);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Cleanup object URLs on unmount
+  // Load existing entries from Supabase
+  useEffect(() => {
+    const loadEntries = async () => {
+      const { data, error } = await supabase
+        .from("guests")
+        .select("id, name, media(url, created_at)")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Failed to load entries:", error);
+        return;
+      }
+
+      const loaded: GuestEntry[] = (data ?? [])
+        .map((g: any) => {
+          const sorted = [...(g.media ?? [])].sort(
+            (a: any, b: any) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          );
+          return { id: g.id, name: g.name, imageUrl: sorted[0]?.url ?? "" };
+        })
+        .filter((g) => g.imageUrl);
+
+      setEntries(loaded);
+    };
+
+    loadEntries();
+  }, []);
+
+  // Cleanup preview object URLs on unmount
   useEffect(() => {
     return () => {
       mediaUrls.forEach((u) => URL.revokeObjectURL(u));
@@ -210,37 +241,89 @@ const SnapGuestbook = () => {
     });
   };
 
-  // Cover photo is automatically derived from the first guest entry's first uploaded media.
   const heroUrl = entries[0]?.imageUrl ?? "";
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!name.trim()) {
       alert("이름을 입력해주세요");
       return;
     }
-    if (mediaUrls.length === 0) {
+    if (mediaFiles.length === 0) {
       alert("사진/동영상을 한 장 이상 추가해주세요");
       return;
     }
-    const entry: GuestEntry = {
-      id: nextIdRef.current++,
-      name: name.trim(),
-      imageUrl: mediaUrls[0], // first media becomes the page
-    };
-    setEntries((prev) => [...prev, entry]);
-    // reset form (keep media url referenced by entry — don't revoke)
-    setName("");
-    setMediaFiles([]);
-    setMediaUrls([]);
-    // flip to last page
-    setTimeout(() => {
-      try {
-        bookRef.current?.pageFlip()?.flip(entries.length + 1);
-      } catch {
-        /* noop */
+
+    setIsUploading(true);
+    try {
+      // 1. Insert guest record
+      const { data: guest, error: guestError } = await supabase
+        .from("guests")
+        .insert({ name: name.trim() })
+        .select()
+        .single();
+
+      if (guestError) throw guestError;
+
+      // 2. Upload each file to Storage and record URL
+      let firstPublicUrl = "";
+      for (const file of mediaFiles) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const path = `${guest.id}/${crypto.randomUUID()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("photos")
+          .upload(path, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("photos")
+          .getPublicUrl(path);
+
+        const { error: mediaError } = await supabase.from("media").insert({
+          guest_id: guest.id,
+          storage_path: path,
+          url: publicUrl,
+          type: file.type.startsWith("video") ? "video" : "image",
+        });
+
+        if (mediaError) throw mediaError;
+
+        if (!firstPublicUrl) firstPublicUrl = publicUrl;
       }
-    }, 200);
-  }, [name, mediaUrls, entries.length]);
+
+      // 3. Add to local state and flip to new page
+      setEntries((prev) => {
+        const updated = [
+          ...prev,
+          { id: guest.id, name: guest.name, imageUrl: firstPublicUrl },
+        ];
+        setTimeout(() => {
+          try {
+            bookRef.current?.pageFlip()?.flip(updated.length + 1);
+          } catch {
+            /* noop */
+          }
+        }, 200);
+        return updated;
+      });
+
+      // Reset form
+      mediaUrls.forEach((u) => URL.revokeObjectURL(u));
+      setName("");
+      setMediaFiles([]);
+      setMediaUrls([]);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast({
+        variant: "destructive",
+        title: "업로드 실패",
+        description: "사진 업로드 중 오류가 발생했습니다. 다시 시도해주세요.",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  }, [name, mediaFiles, mediaUrls, toast]);
 
   const bookWidth = 320;
   const bookHeight = 440;
@@ -413,14 +496,15 @@ const SnapGuestbook = () => {
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            className="w-full py-4 rounded-md font-medium tracking-[0.2em] text-sm transition-all hover:brightness-110 active:scale-[0.98]"
+            disabled={isUploading}
+            className="w-full py-4 rounded-md font-medium tracking-[0.2em] text-sm transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "#d8e592",
               color: "#3d4225",
               boxShadow: "0 6px 18px rgba(216,229,146,0.25)",
             }}
           >
-            올리기
+            {isUploading ? "업로드 중..." : "올리기"}
           </button>
         </section>
       </div>

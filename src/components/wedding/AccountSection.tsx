@@ -10,13 +10,15 @@ interface Account {
 }
 
 const groomAccounts: Account[] = [
-  { bank: "OO은행", number: "000-000-000000", holder: "신랑이름" },
-  { bank: "OO은행", number: "000-000-000000", holder: "신랑아버지" },
+  { bank: "카카오뱅크", number: "3333-10-5027520", holder: "신랑: 김종재" },
+  { bank: "국민은행", number: "666225-90-124634", holder: "신랑아버지: 김백배" },
+  { bank: "농협은행", number: "1110-12-297646", holder: "신랑어머니: 이금자" },
 ];
 
 const brideAccounts: Account[] = [
-  { bank: "OO은행", number: "000-000-000000", holder: "신부이름" },
-  { bank: "OO은행", number: "000-000-000000", holder: "신부어머니" },
+  { bank: "카카오뱅크", number: "3333-27-6198448", holder: "신부: 전민정" },
+  { bank: "농협은행", number: "352-2320-5433-13", holder: "신부아버지: 전종호" },
+  { bank: "농협은행", number: "302-0603-8765-51", holder: "신부어머니: 이영신" },
 ];
 
 const AccountGroup = ({ title, accounts }: { title: string; accounts: Account[] }) => {
@@ -74,7 +76,7 @@ const AccountSection = () => {
   const { ref, isVisible } = useInView();
 
   return (
-    <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`}>
+    <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`} style={{paddingBottom: "20px"}}>
       <h2 className="font-serif text-lg text-center mb-2 text-foreground">축의금 안내</h2>
       <p className="text-xs text-center text-muted-foreground mb-6">마음을 전해주시는 분들을 위해 준비했습니다</p>
       <div className="space-y-3">
