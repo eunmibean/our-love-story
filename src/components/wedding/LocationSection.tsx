@@ -45,10 +45,12 @@ const LocationSection = () => {
         </div>
 
         <div className="text-center space-y-3">
-          <p className="font-serif text-sm text-foreground">경기 안산시 단원구 광덕4로 140</p>
+          <p className="font-serif text-sm text-foreground">빌라드지디 안산
+            <br></br>
+            경기 안산시 단원구 광덕4로 140</p>
           <div className="grid grid-cols-3 gap-2">
             <a
-              href="tmap://search?name=경기 안산시 단원구 광덕4로 140"
+              href="https://poi.tmobiweb.com/app/share/position?contents=dHlwZT0yJnBrZXk9NTc1OTA0NjAwJnBvaUlkPTU3NTkwNDYmcG9pTmFtZT0lRUIlQjklOEMlRUIlOUQlQkMlRUIlOTMlOUMlRUMlQTclODAlRUIlOTQlOTQlMjAlRUMlOTUlODglRUMlODIlQjAmY2VudGVyWD00NTY1ODg4JmNlbnRlclk9MTM0MzIyNSZ0aW1lPTIwMjYlRUIlODUlODQlMjA1JUVDJTlCJTk0JTIwMjUlRUMlOUQlQkMlMjAyMTo0OCZ0ZWw9MDMxLTQ4Ny04MTAwJmFkZHI9JUVBJUIyJUJEJUVBJUI4JUIwJTIwJUVDJTk1JTg4JUVDJTgyJUIwJUVDJThCJTlDJTIwJUVCJThCJUE4JUVDJTlCJTkwJUVBJUI1JUFDJTIwJUVBJUI0JTkxJUVCJThEJTk1NCVFQiVBMSU5QyUyMDE0MA==&tailParam=%7B%7D"
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-card/50 text-xs font-medium text-foreground transition-colors hover:bg-card"
@@ -57,7 +59,7 @@ const LocationSection = () => {
               티맵
             </a>
             <a
-              href="kakaomap://route?ep=37.3175,126.8307&by=CAR"
+              href="https://kko.to/CXosEH7wB9"
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-card/50 text-xs font-medium text-foreground transition-colors hover:bg-card"
@@ -66,7 +68,7 @@ const LocationSection = () => {
               카카오내비
             </a>
             <a
-              href="nmap://route/car?dlat=37.3175&dlng=126.8307&dname=경기 안산시 단원구 광덕4로 140&appname=com.ourlovestory"
+              href="https://map.naver.com/p/directions/-/3zbmB2,2ABuw0,%EB%B9%8C%EB%9D%BC%EB%93%9C%EC%A7%80%EB%94%94%20%EC%95%88%EC%82%B0,34291584,PLACE_POI/-/car?c=15.00,0,0,0,dh"
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-card/50 text-xs font-medium text-foreground transition-colors hover:bg-card"
@@ -86,7 +88,7 @@ const LocationSection = () => {
           <div className="bg-card/30 rounded-lg p-4 space-y-2">
             <Train className="h-4 w-4 text-primary" />
             <p className="text-xs text-muted-foreground">대중교통</p>
-            <p className="text-xs text-foreground/80">지하철 O호선 OO역<br />O번 출구 도보 5분</p>
+            <p className="text-xs text-foreground/80">지하철 4호선 고잔역<br />2번 출구 도보 10분</p>
           </div>
         </div>
       </div>

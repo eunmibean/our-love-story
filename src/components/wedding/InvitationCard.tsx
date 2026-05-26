@@ -8,8 +8,8 @@ const InvitationCard = () => {
     <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`}>
       <div className="text-center space-y-8">
         <div className="space-y-1 font-serif text-sm text-muted-foreground">
-          <p>&lt;김백배&gt;·&lt;이금자&gt;의 장남 <span className="text-foreground font-medium">&lt;김종재&gt;</span></p>
-          <p>&lt;전종호&gt;·&lt;이영신&gt;의 장녀 <span className="text-foreground font-medium">&lt;전민정&gt;</span></p>
+          <p>김백배·이금자의 장남 <span className="text-foreground font-medium">김종재</span></p>
+          <p>전종호·이영신의 장녀 <span className="text-foreground font-medium">전민정</span></p>
         </div>
 
         <div className="space-y-4 font-serif text-foreground/90 text-[15px] leading-relaxed">
@@ -28,7 +28,7 @@ const InvitationCard = () => {
         </div>
 
         <p className="font-serif text-primary text-sm tracking-wider">
-          &lt;김종재&gt;·&lt;전민정&gt; 드림
+          김종재·전민정 드림
         </p>
       </div>
     </section>
