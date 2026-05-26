@@ -2,20 +2,32 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useInView } from "@/hooks/useInView";
+import img1 from "@/assets/stories_month/1.jpeg";
+import img2 from "@/assets/stories_month/2.jpeg";
+import img3 from "@/assets/stories_month/3.jpeg";
+import img4 from "@/assets/stories_month/4.jpeg";
+import img5 from "@/assets/stories_month/5.jpeg";
+import img6 from "@/assets/stories_month/6.jpeg";
+import img7 from "@/assets/stories_month/7.jpeg";
+import img8 from "@/assets/stories_month/8.jpeg";
+import img9 from "@/assets/stories_month/9.jpeg";
+import img10 from "@/assets/stories_month/10.jpeg";
+import img11 from "@/assets/stories_month/11.jpg";
+import img12 from "@/assets/stories_month/12.jpg";
 
 const months = [
-  { label: "JAN", rotation: "-2deg" },
-  { label: "FEB", rotation: "1deg" },
-  { label: "MAR", rotation: "-1deg" },
-  { label: "APR", rotation: "2deg" },
-  { label: "MAY", rotation: "-1.5deg" },
-  { label: "JUN", rotation: "1.5deg" },
-  { label: "JUL", rotation: "-2deg" },
-  { label: "AUG", rotation: "0.5deg" },
-  { label: "SEP", rotation: "-1deg" },
-  { label: "OCT", rotation: "1.5deg" },
-  { label: "NOV", rotation: "-0.5deg" },
-  { label: "DEC", rotation: "2deg" },
+  { label: "JAN", rotation: "-2deg",  image: img1 },
+  { label: "FEB", rotation: "1deg",   image: img2 },
+  { label: "MAR", rotation: "-1deg",  image: img3 },
+  { label: "APR", rotation: "2deg",   image: img4 },
+  { label: "MAY", rotation: "-1.5deg",image: img5 },
+  { label: "JUN", rotation: "1.5deg", image: img6 },
+  { label: "JUL", rotation: "-2deg",  image: img7 },
+  { label: "AUG", rotation: "0.5deg", image: img8 },
+  { label: "SEP", rotation: "-1deg",  image: img9 },
+  { label: "OCT", rotation: "1.5deg", image: img10 },
+  { label: "NOV", rotation: "-0.5deg",image: img11 },
+  { label: "DEC", rotation: "2deg",   image: img12 },
 ];
 
 const frameStyles = [
@@ -73,8 +85,7 @@ const OurStorySection = () => {
             </span>
 
             {/* Photo frame with hand-drawn border effect */}
-            <motion.div
-              layoutId={`polaroid-${i}`}
+            <div
               className={`relative w-full aspect-square bg-secondary/50 overflow-hidden ${frameStyles[i % frameStyles.length]}`}
               style={{ borderColor: "#A4BE7B" }}
             >
@@ -94,11 +105,12 @@ const OurStorySection = () => {
                 />
               </svg>
 
-              {/* Placeholder content */}
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
-                <span className="text-2xl">📷</span>
-              </div>
-            </motion.div>
+              <img
+                src={month.image}
+                alt={month.label}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </button>
         ))}
       </div>
@@ -152,15 +164,16 @@ const OurStorySection = () => {
                     borderRadius: "2px",
                   }}
                 >
-                  <motion.div
-                    layoutId={`polaroid-${selected}`}
+                  <div
                     className="relative w-full aspect-square bg-secondary/40 overflow-hidden"
                     style={{ borderRadius: "1px" }}
                   >
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/60">
-                      <span className="text-5xl">📷</span>
-                    </div>
-                  </motion.div>
+                    <img
+                      src={months[selected].image}
+                      alt={months[selected].label}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                   <span
                     className="block text-center text-base font-bold text-foreground/80 tracking-wider mt-4"
                     style={{ fontFamily: "'Gowun Batang', serif" }}
