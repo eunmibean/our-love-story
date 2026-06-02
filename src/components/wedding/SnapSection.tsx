@@ -1,5 +1,6 @@
 import { useInView } from "@/hooks/useInView";
 import { useNavigate } from "react-router-dom";
+import photoAlbum from "@/assets/photo_album.jpg";
 
 const samplePhotos = [
   { id: 1, rotate: "-rotate-6" },
@@ -24,11 +25,12 @@ const SnapSection = () => {
             className={`absolute w-44 h-56 bg-card rounded-xl shadow-lg border border-border ${photo.rotate} transition-transform`}
             style={{ zIndex: i }}
           >
-            <div className="w-full h-full rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center m-1.5"
+            <img
+              src={photoAlbum}
+              alt="snap"
+              className="w-full h-full rounded-xl object-cover m-1.5"
               style={{ width: "calc(100% - 12px)", height: "calc(100% - 12px)" }}
-            >
-              <span className="text-3xl">📷</span>
-            </div>
+            />
           </div>
         ))}
       </div>
