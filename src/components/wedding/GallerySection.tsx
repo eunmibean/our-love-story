@@ -68,7 +68,10 @@ const GallerySection = () => {
             <button
               key={i}
               type="button"
-              onClick={() => setLightbox(i)}
+              onClick={(e) => {
+                (e.currentTarget as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+                setLightbox(i);
+              }}
               className={`aspect-square overflow-hidden ${i >= INITIAL_COUNT && !expanded ? "hidden" : ""}`}
             >
               <img
