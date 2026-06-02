@@ -37,8 +37,6 @@ const GallerySection = () => {
   const [expanded, setExpanded] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
 
-  const visiblePhotos = expanded ? photos : photos.slice(0, INITIAL_COUNT);
-
   const prev = useCallback(() => {
     if (lightbox === null) return;
     setLightbox((lightbox - 1 + photos.length) % photos.length);
@@ -66,12 +64,12 @@ const GallerySection = () => {
 
       <div className="relative">
         <div className="grid grid-cols-3 gap-0.5 px-0">
-          {visiblePhotos.map((src, i) => (
+          {photos.map((src, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => setLightbox(expanded ? i : i)}
-              className="aspect-square overflow-hidden"
+              onClick={() => setLightbox(i)}
+              className={`aspect-square overflow-hidden ${i >= INITIAL_COUNT && !expanded ? "hidden" : ""}`}
             >
               <img
                 src={src}
