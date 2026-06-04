@@ -77,11 +77,19 @@ const AccountSection = () => {
 
   return (
     <section ref={ref} className={`px-6 py-12 ${isVisible ? "animate-fade-in-up" : "opacity-0"}`} style={{paddingBottom: "20px"}}>
-      <h2 className="font-serif text-lg text-center mb-2 text-foreground">축의금 안내</h2>
-      <p className="text-xs text-center text-muted-foreground mb-6">마음을 전해주시는 분들을 위해 준비했습니다</p>
+      <h2 className="font-serif text-lg text-center mb-2 text-foreground">마음 전하실 곳</h2>
+      <p className="text-xs text-center text-muted-foreground mb-6">
+        <br></br>
+        멀리서도 축하의 마음을 <br></br>
+        전하고 싶으신 분들을 위해 <br></br>
+        계좌번호를 안내드립니다. <br></br>
+        <br></br>
+        소중한 축하를 보내주셔서 감사드리며, <br></br>
+        따듯한 마음에 깊이 감사드립니다.<br></br>
+      </p>
       <div className="space-y-3">
-        <AccountGroup title="신랑측 계좌" accounts={groomAccounts} />
-        <AccountGroup title="신부측 계좌" accounts={brideAccounts} />
+        <AccountGroup title="신랑측" accounts={groomAccounts} />
+        <AccountGroup title="신부측" accounts={brideAccounts} />
       </div>
     </section>
   );

@@ -11,6 +11,7 @@ const HeroSection = () => {
             김종재 <span className="text-primary">&</span> 전민정
           </h1>
           <p className="text-foreground/70 text-sm drop-shadow">2026. 10. 10 토요일 오후 4시 50분</p>
+          <p className="text-foreground/70 text-sm drop-shadow">빌라드지디 안산, 7층 그레이스켈리홀</p>
         </div>
       </div>
       <div className="absolute bottom-8 inset-x-0 mx-auto w-fit flex flex-col items-center gap-2 animate-bounce-down">

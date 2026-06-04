@@ -39,7 +39,7 @@ const VenueInfo = () => {
             <img src={card.image} alt="" className="w-28 h-20 object-contain flex-shrink-0 rounded-lg" />
             <div>
               <p className="font-serif text-sm font-bold text-foreground leading-snug mb-1">{card.title}</p>
-              <p className="text-xs text-foreground/50 leading-relaxed">{card.text}</p>
+              <p className="text-xs text-foreground leading-relaxed">{card.text}</p>
             </div>
           </div>
         ))}

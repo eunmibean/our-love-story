@@ -1,4 +1,3 @@
-import { Car, Train } from "lucide-react";
 import tmapIcon from "@/assets/icons/tmap_icon.png";
 import kakaoIcon from "@/assets/icons/kakao_icon.png";
 import naverIcon from "@/assets/icons/navermap_icon.png";
@@ -79,16 +78,24 @@ const LocationSection = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-6">
-          <div className="bg-card/30 rounded-lg p-4 space-y-2">
-            <Car className="h-4 w-4 text-primary" />
-            <p className="text-xs text-muted-foreground">주차 안내</p>
-            <p className="text-xs text-foreground/80">건물 내 주차장 이용 가능<br />(2시간 무료)</p>
+        <div className="divide-y divide-border/50 border border-border/50 rounded-lg overflow-hidden mt-6">
+          <div className="flex gap-4 px-4 py-3">
+            <p className="text-xs font-bold text-foreground shrink-0 w-20">자가용 이용 시</p>
+            <p className="text-xs text-foreground/70 leading-relaxed">1. 주소 : [빌라드지디 안산] 경기 안산시 단원구 광덕4로 140 지디팰리스타워(고잔동 703) 
+            <br></br>2. 주차 안내(2시간 무료) : 빌라드지디 안산 맞은편 화랑/월드/대한 법조주차장(도보5분/셔틀버스 운행)</p>
           </div>
-          <div className="bg-card/30 rounded-lg p-4 space-y-2">
-            <Train className="h-4 w-4 text-primary" />
-            <p className="text-xs text-muted-foreground">대중교통</p>
-            <p className="text-xs text-foreground/80">지하철 4호선 고잔역<br />2번 출구 도보 10분</p>
+          <div className="flex gap-4 px-4 py-3">
+            <p className="text-xs font-bold text-foreground shrink-0 w-20">지하철 이용 시</p>
+            <p className="text-xs text-foreground/70 leading-relaxed">지하철 4호선 고잔역 2번 출구에서<br />왼쪽 대로변 따라 200미터 전방에 위치</p>
+          </div>
+          <div className="flex gap-4 px-4 py-3">
+            <p className="text-xs font-bold text-foreground shrink-0 w-20">버스 이용 시</p>
+            <p className="text-xs text-foreground/70 leading-relaxed">
+              [고잔역 2번 출구] 525, 98, 99-1<br />
+              [쥬르지오 4차] 98, 99-1<br />
+              [홈플러스앞.고잔물역거리타운] 55, 71, 76, 98, 99-1<br />
+              [안산문화물의광장] 10, 123, 3, 50, 80B, 80C, 90A, 98, 99-1, N80B, 5609
+            </p>
           </div>
         </div>
       </div>

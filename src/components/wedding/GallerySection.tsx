@@ -15,19 +15,10 @@ import p010 from "@/assets/wedding_photo/010.jpeg";
 import p011 from "@/assets/wedding_photo/011.jpeg";
 import p012 from "@/assets/wedding_photo/012.jpeg";
 import p013 from "@/assets/wedding_photo/013.jpeg";
-import p014 from "@/assets/wedding_photo/014.jpeg";
-import p015 from "@/assets/wedding_photo/015.jpeg";
-import p016 from "@/assets/wedding_photo/016.jpeg";
-import p017 from "@/assets/wedding_photo/017.jpeg";
-import p018 from "@/assets/wedding_photo/018.jpeg";
-import p019 from "@/assets/wedding_photo/019.jpeg";
-import p020 from "@/assets/wedding_photo/020.jpeg";
-import p021 from "@/assets/wedding_photo/021.jpeg";
 
 const photos = [
   p001, p002, p003, p004, p005, p006, p007,
-  p008, p009, p010, p011, p012, p013, p014,
-  p015, p016, p017, p018, p019, p020, p021,
+  p008, p009, p010, p011, p012, p013
 ];
 
 const INITIAL_COUNT = 9;
