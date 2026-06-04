@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import HeroSection from "@/components/wedding/HeroSection";
+import HeroSection from "@/components/wedding/HeroSection_v2";
 import InvitationCard from "@/components/wedding/InvitationCard";
 import ContactSection from "@/components/wedding/ContactSection";
 import OurStorySection from "@/components/wedding/OurStorySection";
@@ -29,9 +29,9 @@ const Index = () => {
       <div className="w-full max-w-[480px] shadow-2xl shadow-black/10 min-h-screen" style={{ backgroundImage: "url('/bg_img_white.jpg')", backgroundRepeat: "repeat", backgroundSize: "auto" }}>
         <HeroSection />
         <SectionDivider />
-        <InvitationCard />
-        <SectionDivider />
         <OurStorySection />
+        <SectionDivider />
+        <InvitationCard />
         <SectionDivider />
         <GallerySection />
         <SectionDivider />
