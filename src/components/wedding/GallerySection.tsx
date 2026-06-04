@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useInView } from "@/hooks/useInView";
 
@@ -94,8 +95,8 @@ const GallerySection = () => {
         </button>
       </div>
 
-      {/* 라이트박스 */}
-      {lightbox !== null && (
+      {/* 라이트박스 — Portal로 document.body에 직접 마운트 */}
+      {lightbox !== null && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={() => setLightbox(null)}
@@ -139,7 +140,8 @@ const GallerySection = () => {
           >
             <ChevronRight className="w-6 h-6" />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
