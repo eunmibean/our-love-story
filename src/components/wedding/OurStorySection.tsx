@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useInView } from "@/hooks/useInView";
 import img1 from "@/assets/stories_month/1.jpeg";
@@ -90,8 +91,8 @@ const OurStorySection = () => {
         소중한 우리의 순간들 • {new Date().getFullYear()}
       </p> */}
 
-      {/* 모달 */}
-      {selected !== null && (
+      {/* 모달 — Portal로 document.body에 직접 마운트 */}
+      {selected !== null && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
           onClick={close}
@@ -115,7 +116,8 @@ const OurStorySection = () => {
               style={{ maxHeight: "90vh", maxWidth: "90vw" }}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
