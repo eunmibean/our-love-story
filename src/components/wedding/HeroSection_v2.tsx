@@ -28,10 +28,12 @@ const HeroSection = () => {
           <p className="relative text-foreground/70 text-sm">빌라드지디 안산, 7층 그레이스켈리홀</p>
         </div>
         {/* SCROLL */}
-          <div className="absolute bottom-2 inset-x-0 flex flex-col items-center gap-1 animate-bounce-down">
-            <span className="text-xs text-primary/60 tracking-widest">SCROLL</span>
-            <ChevronDown className="h-4 w-4 text-primary/60" />
-          </div>
+        {/* <div className="flex flex-col items-center gap-1 py-10 animate-bounce-down"> */}
+        <div className="flex flex-col items-center relative w-full bg-gradient-to-t from-transparent via-[#ffffff] to-[#fefefe] pt-12 pb-20">
+          
+          <span className="text-xs text-primary/60 tracking-widest">SCROLL</span>
+          <ChevronDown className="h-4 w-4 text-primary/60" />
+        </div>
       </div>
     </section>
   );
