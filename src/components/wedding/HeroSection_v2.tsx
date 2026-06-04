@@ -16,7 +16,6 @@ const HeroSection = () => {
         {/* 텍스트 구역 */}
         <div
           className="relative w-full flex flex-col items-center text-center space-y-4 pt-10 pb-16"
-          style={{ backgroundImage: "url('/gradation.png')", backgroundSize: "repeat", backgroundPosition: "auto" }}
         >
           <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-white to-transparent pointer-events-none" />
           <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
@@ -28,11 +27,18 @@ const HeroSection = () => {
           <p className="relative text-foreground/70 text-sm">빌라드지디 안산, 7층 그레이스켈리홀</p>
         </div>
         {/* SCROLL */}
-        {/* <div className="flex flex-col items-center gap-1 py-10 animate-bounce-down"> */}
-        <div className="flex flex-col items-center relative w-full bg-gradient-to-t from-transparent via-[#ffffff] to-[#fefefe] pt-12 pb-20">
-          
+          {/* <div className="flex flex-col items-center relative w-full bg-gradient-to-t from-transparent via-[#ffffff] to-[#fefefe] pt-12 pb-20 animate-bounce-down">        
           <span className="text-xs text-primary/60 tracking-widest">SCROLL</span>
           <ChevronDown className="h-4 w-4 text-primary/60" />
+        </div> */}
+
+        {/* SCROLL 구역: 배경은 고정 */}
+        <div className="flex flex-col items-center relative w-full bg-gradient-to-t from-transparent via-[#ffffff] to-[#fefefe]  pt-12 pb-20">        
+          {/* 애니메이션은 내부 실질적 콘텐츠에만 적용 */}
+          <div className="flex flex-col items-center gap-1 animate-bounce-down">
+            <span className="text-xs text-primary/60 tracking-widest">SCROLL</span>
+            <ChevronDown className="h-4 w-4 text-primary/60" />
+          </div>
         </div>
       </div>
     </section>
