@@ -10,7 +10,7 @@ interface ContactPerson {
 
 const groomSide: ContactPerson[] = [
   { relation: "신랑", name: "김종재", phone: "010-7732-7392" },
-  { relation: "신랑 아버지", name: "김백배", phone: "010-5014-8902" },
+  { relation: "신랑 아버지", name: "김백배", phone: "010-8586-7392" },
   { relation: "신랑 어머니", name: "이금자", phone: "010-6335-4388" },
 ];
 

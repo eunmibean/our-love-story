@@ -92,7 +92,7 @@ const LocationSection = () => {
             <p className="text-xs font-bold text-foreground shrink-0 w-20">버스 이용 시</p>
             <p className="text-xs text-foreground/70 leading-relaxed">
               [고잔역 2번 출구] 525, 98, 99-1<br />
-              [쥬르지오 4차] 98, 99-1<br />
+              [푸르지오 4차] 98, 99-1<br />
               [홈플러스앞.고잔물역거리타운] 55, 71, 76, 98, 99-1<br />
               [안산문화물의광장] 10, 123, 3, 50, 80B, 80C, 90A, 98, 99-1, N80B, 5609
             </p>
