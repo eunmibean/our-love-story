@@ -49,7 +49,7 @@ const SnapSection = () => {
       {/* Upload button */}
       <div className="flex justify-center mb-4">
         <button
-          onClick={() => navigate("/snap")}
+          //onClick={() => navigate("/snap")}
           className="w-full max-w-xs py-4 border border-border rounded-lg text-foreground font-medium text-sm hover:bg-primary/10 transition-colors"
           style={{ backgroundColor: "#a3bd7a", color: "#fff0d0" }}
         >
