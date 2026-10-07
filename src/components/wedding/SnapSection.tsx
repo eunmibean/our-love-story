@@ -1,5 +1,5 @@
+import { useEffect, useState } from "react";
 import { useInView } from "@/hooks/useInView";
-import { useNavigate } from "react-router-dom";
 import photoAlbum from "@/assets/photo_album.jpg";
 
 const samplePhotos = [
@@ -10,7 +10,23 @@ const samplePhotos = [
 
 const SnapSection = () => {
   const { ref, isVisible } = useInView();
-  const navigate = useNavigate();
+  const uploadOpeningTime = new Date("2026-10-10T10:10:00+09:00");
+  const [isUploadEnabled, setIsUploadEnabled] = useState(() => new Date() >= uploadOpeningTime);
+
+  useEffect(() => {
+    const updateState = () => {
+      setIsUploadEnabled(new Date() >= uploadOpeningTime);
+    };
+
+    updateState();
+    const timer = window.setInterval(updateState, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const handleUploadClick = () => {
+    if (!isUploadEnabled) return;
+    window.location.href = "https://wedding-photos.minjeong-jongjae.workers.dev/";
+  };
 
   return (
     <section
@@ -49,18 +65,22 @@ const SnapSection = () => {
       {/* Upload button */}
       <div className="flex justify-center mb-4">
         <button
-          //onClick={() => navigate("/snap")}
-          className="w-full max-w-xs py-4 border border-border rounded-lg text-foreground font-medium text-sm hover:bg-primary/10 transition-colors"
-          style={{ backgroundColor: "#a3bd7a", color: "#fff0d0" }}
+          disabled={!isUploadEnabled}
+          onClick={handleUploadClick}
+          className="w-full max-w-xs py-4 border border-border rounded-lg text-foreground font-medium text-sm transition-all disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            backgroundColor: isUploadEnabled ? "#a3bd7a" : "#d9d9d9",
+            color: isUploadEnabled ? "#fff0d0" : "#7a7a7a",
+          }}
         >
-          사진 업로드
+          {isUploadEnabled ? "사진 업로드" : "10월 10일 10:10부터 가능"}
         </button>
       </div>
 
       {/* Date notice */}
       <div className="text-center text-xs text-muted-foreground space-y-0.5">
-        <p>2026-10-10 10:30부터</p>
-        <p>업로드 가능합니다.</p>
+        <p>한국시간 기준</p>
+        <p>2026-10-10 10:10부터 업로드 가능합니다.</p>
       </div>
     </section>
   );
